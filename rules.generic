@@ -1,0 +1,55 @@
+
+mk_CONFIGURATIONS   = $(USER_CONFIGURATIONS: % =%) $(mk_DEFAULT_CONFIGURATIONS)
+mk_REBUILD_CRITERIA = $(USER_REBUILD_CRITERIA: % =%) $(mk_DEFAULT_REBUILD_CRITERIA)
+
+mk_DEFAULT_CONFIGURATIONS   =
+mk_DEFAULT_REBUILD_CRITERIA = DEPENDENCY_LIST
+
+DEPENDENCY_LIST = present
+
+.PHONY: $(mk_CONFIGURATIONS) $(mk_REBUILD_CRITERIA)
+
+MSG_FLUSH ?= "flushing\ secondary\ files\ ..."
+MSG_BUILD ?= "===\ start\ build\ for\ configuration\ '$(_CFG)'==="
+MSG_LIST  := $(MSG_LIST) $(MSG_FLUSH) $(MSG_BUILD)
+
+#--
+# Build Chain
+#
+$(mk_CONFIGURATIONS):
+	$(MAKE) _CFG="$@" mk_BuildChain
+
+mk_BuildChain: $(MSG_BUILD)
+	@echo "=== start build for configuration '"$(_CFG)"' ==="
+	$(MAKE) _CFG="$(_CFG)" $(mk_REBUILD_CRITERIA)
+	#$(MAKE) _CFG="$(_CFG)" $(mk_TARGET_OUTPUT)
+	@echo "=== $(mk_TARGET_OUTPUT) '"$(_CFG)"' up-to-date ==="
+
+#--
+# Rebuild Criteria
+#
+$(mk_REBUILD_CRITERIA):
+	$(MAKE) "_CFG=$(_CFG)" "_REBUILD_CRITERION=$(@: % =%)" "_REBUILD_ARGUMENT=$($@: % =%)" $($@)
+
+#-- glue target for rebuild criterion --
+$($(_REBUILD_CRITERION)): \
+	"$(_CFG)/" \
+	$(_CFG)/_$(_REBUILD_ARGUMENT)_$(_REBUILD_CRITERION).make
+
+$(_CFG)/_$(_REBUILD_ARGUMENT)_$(_REBUILD_CRITERION).make:
+	rm -f $(_CFG)/_*_$(_REBUILD_CRITERION).make
+	$(MAKE) mk_FlushSecondary
+	touch $@
+
+##
+# Flush Secondary - delete intermediate files
+#
+mk_FlushSecondary: $(MSG_FLUSH)
+
+#--
+# Directory Target
+# - allows to generate directories via dependency list
+#
+"%/":
+	@mkdir -p $*
+

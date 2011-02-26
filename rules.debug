@@ -1,0 +1,6 @@
+
+#-- debug target, printing variable contents --
+echo_%:
+	@echo "$* = $($*)"
+
+

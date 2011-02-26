@@ -1,0 +1,17 @@
+
+mk_HELP_SECTIONS         = $(USER_HELP_SECTIONS) $(mk_HELP_DEFAULT_SECTIONS)
+mk_HELP_DEFAULT_SECTIONS = help_global
+
+#--
+# Print global help
+#
+help: $(mk_HELP_SECTIONS)
+
+help_global:
+	@echo "Make-Manual for building $(OUTPUT_NAME)" && echo
+	@echo "AVAILABLE CONFIGURATIONS:"
+	@echo "  $(mk_CONFIGURATIONS)" && echo
+	@#echo "OTHER TARGETS:"
+	@#echo "  clean _CFG=<CONFIG>  - clean configuration <CONFIG> (one out of {$(mk_CONFIGURATIONS: % =%)}), but keep the linker output."
+	@#echo "  mrproper             - clean all configuration folders, but keep the linker output." && echo
+

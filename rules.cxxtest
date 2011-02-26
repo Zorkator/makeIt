@@ -1,0 +1,15 @@
+#-- unittests --
+unittests: $(UNITTESTS:%_ut.h=$(mk_OUTPUT_TARGET)/ut_%)
+	@ for i in $^ ; do echo -n "$$i: " ; $$i ; done
+
+
+#-- unittests --
+$(_CONF)/%.cpp : unittest/%.h
+	$(DEVELOPMENT_DIR)/cxxtest/cxxtestgen.pl -o $@ $<
+
+$(_CONF)/ut_% : $(_CONF)/%_ut.cpp $(LINK_OBJECTS_UT:%=$(_CONF)/%)
+	$(CPPC) $(mk_INCLUDE_PATHLIST) -I$(DEVELOPMENT_DIR)/cxxtest $(mk_CPP_FLAGS) \
+		-o $@ $(mk_LINK_FLAGS_UT) $(mk_LINK_PATHLIST) 														\
+		$(LINK_OBJECTS_UT:%=$(_CONF)/%) $(LINK_PATHLIST_UT)  $(LINK_LIBLIST_UT)   \
+		$(DEVELOPMENT_DIR)/cxxtest/main.cpp $<
+

@@ -1,0 +1,521 @@
+##
+# Generic makefile interface, providing standard make targets and global settings
+#
+# Copyright: (c) Copyright 1992 by
+#                DURST CAD/CONSULTING GmbH, Germany                        
+#                D-71088 Holzgerlingen                                      
+#                Hohenzollernstr. 2                                
+#
+# Author   : Josef Scheuer
+#
+
+# getting started:
+# Just create a new file "makefile" as simple as the following example ...
+#
+# CPP_SOURCE       = tool.cpp routines.cpp
+# OUTPUT_NAME      = tool
+# OUTPUT_TYPE      = binary
+# INCLUDE_PATHLIST = -I./include
+# LINK_PATHLIST    = -L/usr/lib
+# LINK_LIBLIST     = -lm -lX11
+# include <path_to_this_file>/makefile.globals
+#
+#	Due to the predefined configurations debug and release, the two corresponding calls
+#	"make debug" and "make release" should run out of the box.
+#	For customizing your makefile, please consider the list of known variables below.
+#	In order to add another configuration, let's say "special", just add something like the following lines:
+#
+# USER_CONFIGURATIONS = special
+# C_FLAGS_special     = -DSPECIAL -DSOME_FANCY_FLAG=42
+# LINK_FLAGS_special  = -s -Wl,static
+# CPP_SOURCE_special  = funkyModule.cpp
+#
+#
+# known variables:
+# <name>                       <default-value>             <comment>
+#-------------------------------------------------------------------------------------------
+# CC                           gcc                         C-compiler
+# CPPC                         g++                         C++-comiler
+# LINK                         g++                         linker command
+# MOC                                                      QT-moc command
+# UIC                                                      QT-uic command
+# AR                           ar                          archive command
+#
+# INCLUDE_PATHLIST                                         search paths for header files (prefix: -I)
+# C_FLAGS                                                  configuration independent compile flags for C-sources
+# CPP_FLAGS                                                configuration independent compile flags for C++-sources
+# CXX_FLAGS                                                configuration independent compile flags for C/C++-sources
+# TARGET_FLAGS                                             configuration independent target flags
+# LINK_PATHLIST                                            search paths for libraries
+# LINK_LIBLIST                                             list of libraries to link
+# OUTPUT_NAME                  output                      name for linker output
+# OUTPUT_TYPE                  binary                      output type, one out of {binary, static, shared}
+# OUTPUT_PREFIX                                            prefix for generating the output, e.g. destination path, relative to configuration folder
+# REV_MAJOR                    REV_MAJOR.NOT.SET           the main version id -> used: library major number / REVISION_ID compile flag
+# REV_MINOR                    0                           the sub version id (e.g. svn revision number) -> used: library minor number / REVISION_ID compile flag
+# REVISION_ID                  $(REV_MAJOR).$(REV_MINOR)   the revision id -> used: library output name / REVISION_ID compile flag
+# REVISION_DATE                `date -I`                   the nominal date of the revision - defaults to iso date format of today -> used: REVISION_DATE compile flag
+# REVISION_ID_<OUTPUT_NAME>                                global revision id override. NOTE: setting this variable will rule out REVISION_ID.
+# REVISION_DATE_<OUTPUT_NAME>                              global revision date override. NOTE: setting this variable will rule out REVISION_DATE.
+#
+# USER_CONFIGURATIONS                                      list of user configurations (predefined: debug, release - see following variables)
+# C_FLAGS_debug                -DDEBUG -ggdb               C compiler flags for predefined configuration debug
+# CPP_FLAGS_debug              -DDEBUG -ggdb               C++ compiler flags for predefined configuration debug
+# LINK_FLAGS_debug                                         linker flags for predefined configuration debug
+# C_FLAGS_release              -DRELEASE -O2               C compiler flags for predefined configuration release
+# CPP_FLAGS_release            -DRELEASE -O2               C++ compiler flags for predefined configuration release
+# LINK_FLAGS_release           -s                          linker flags for predefined configuration release
+# QT_VERSION_ID                                            id for using specific QT version (e.g. 3 or 4)
+#
+# C_SOURCE                                                 list of C-files
+# CPP_SOURCE                                               list of C++-files
+# HEADER_DIR                   ./include                   header directory prefix
+# UI_SOURCE_DIR                ./ui                        directory for Qt-ui-files
+# MOC_SOURCE                                               list of cpp-files to build QT moc-files for
+# UIC_SOURCE                                               list of ui-files to build C++-files from
+# UI_TRANSLATIONS                                          list of Qt-translation files involved (one for each language)
+# 
+
+####
+# compiler & tools
+##
+CC       = gcc
+CPPC     = g++
+LINK     = g++
+AR       = ar
+
+# -- qt tools --
+ifeq ($(QT_VERSION_ID),)
+QT_VERSION_ID = 4
+endif
+
+mk_QT_TOOLS_DIR = $(QT$(QT_VERSION_ID)_TOOLS_DIR)
+MOC      = $(mk_QT_TOOLS_DIR)/moc
+UIC      = $(mk_QT_TOOLS_DIR)/uic
+LUPDATE  = $(mk_QT_TOOLS_DIR)/lupdate
+LRELEASE = $(mk_QT_TOOLS_DIR)/lrelease
+
+
+###
+# check and set defaults
+##
+#-- OUTPUT_NAME
+ifeq  ($(OUTPUT_NAME),)
+OUTPUT_NAME = output
+endif
+
+#-- OUTPUT_TYPE
+ifeq  ($(OUTPUT_TYPE),)
+OUTPUT_TYPE = binary
+endif
+
+#-- REV_MAJOR
+ifeq ($(REV_MAJOR),)
+REV_MAJOR = REV_MAJOR.NOT.SET
+endif
+
+#-- REV_MINOR
+ifeq ($(REV_MINOR),)
+REV_MINOR = 0
+endif
+
+#-- OUTPUT_PREFIX
+ifeq ($(OUTPUT_PREFIX),)
+mk_OUTPUT_TARGET   = $(_CONF)
+else
+mk_OUTPUT_TARGET   = $(_CONF)/$(OUTPUT_PREFIX)
+endif
+
+# REVISION_ID
+ifneq ($(REVISION_ID_$(OUTPUT_NAME)),)
+REVISION_ID := $(REVISION_ID_$(OUTPUT_NAME))
+endif
+ifeq ($(REVISION_ID),)
+mk_REVISION_ID = $(REV_MAJOR).$(REV_MINOR)
+else
+mk_REVISION_ID = $(REVISION_ID)
+endif
+
+# REVISION_DATE
+ifneq ($(REVISION_DATE_$(OUTPUT_NAME)),)
+REVISION_DATE := $(REVISION_DATE_$(OUTPUT_NAME))
+endif
+ifeq ($(REVISION_DATE),)
+mk_REVISION_DATE = `date`
+else
+mk_REVISION_DATE = $(REVISION_DATE)
+endif
+
+# SVN REVISION
+SVN_REV = $(shell svn info | grep ^Revision | sed -e 's/Revision: //')
+ifeq ($(SVN_REV),)
+mk_SVN_REV = "unknown"
+else
+mk_SVN_REV = "$(SVN_REV)"
+endif
+
+# mk_HEADER_DIR
+ifeq ($(HEADER_DIR),)
+mk_HEADER_DIR = ./include
+else
+mk_HEADER_DIR = $(HEADER_DIR)
+endif
+
+# mk_UI_SOURCE_DIR
+ifeq ($(UI_SOURCE_DIR),)
+mk_UI_SOURCE_DIR = ./ui
+else
+mk_UI_SOURCE_DIR = $(UI_SOURCE_DIR)
+endif
+
+
+####
+# make internals
+##
+mk_INCLUDE_PATHLIST = -I. $(INCLUDE_PATHLIST) $(INCLUDE_PATHLIST_$(_CONF))
+
+#-- predefined build configurations --
+CXX_FLAGS          := $(CXX_FLAGS)
+LINK_FLAGS         := $(LINK_FLAGS)
+
+C_FLAGS_debug       = -DDCC_DEBUG -DQT_NO_DEBUG -ggdb
+CPP_FLAGS_debug     = -DDCC_DEBUG -DQT_NO_DEBUG -ggdb
+LINK_FLAGS_debug   := $(LINK_FLAGS_debug)
+
+C_FLAGS_profile     = $(C_FLAGS_debug) -pg
+CPP_FLAGS_profile   = $(CPP_FLAGS_debug) -pg
+LINK_FLAGS_profile  = -pg
+
+C_FLAGS_release     = -DDCC_RELEASE -DQT_NO_DEBUG -O2
+CPP_FLAGS_release   = -DDCC_RELEASE -DQT_NO_DEBUG -O2
+LINK_FLAGS_release := $(LINK_FLAGS_release) -s
+
+#-- list of configurations --
+mk_CONFIGURATIONS   = debug profile release $(USER_CONFIGURATIONS: % =%)
+
+#-- list of rebuild criteria --
+mk_REBUILD_CRITERIA = OUTPUT_TYPE $(USER_REBUILD_CRITERIA: % =%)
+
+#-- help sections --
+mk_HELP_SECTIONS    = help_global $(HELP_SECTIONS)
+
+
+####
+# determine output type and choose link command and flags appropreately
+##
+ifeq ($(OUTPUT_TYPE),static)
+# for generating a static library ...
+mk_LINK             = $(AR)
+mk_LINK_FLAGS       = rcs
+mk_LINK_PATHLIST    =
+mk_LINK_LIBLIST     =
+mk_LINK_OUT_FLAG    =
+mk_LINK_OUTPUT_NAME = lib$(_OUTPUT_NAME).a
+mk_LINK_OUTPUT      = $(mk_LINK_OUTPUT_NAME).$(mk_REVISION_ID)
+mk_LINK_POSTPROC    = ln -fs $(mk_LINK_OUTPUT) $(mk_OUTPUT_TARGET)/$(mk_LINK_OUTPUT_NAME) && \
+                      ln -fs $(mk_LINK_OUTPUT) $(mk_OUTPUT_TARGET)/$(mk_LINK_OUTPUT_NAME).$(REV_MAJOR)
+mk_TARGET_FLAGS     = $(TARGET_FLAGS) $(TARGET_FLAGS_$(_CONF))
+endif
+#
+ifeq ($(OUTPUT_TYPE),shared)
+# for generating a shared library ...
+mk_LINK             = $(LINK)
+mk_LINK_PATHLIST    = $(_LINK_PATHLIST) $(LINK_PATHLIST) $(LINK_PATHLIST_$(_CONF))
+mk_LINK_LIBLIST     = $(LINK_LIBLIST) $(LINK_LIBLIST_$(_CONF))
+mk_LINK_FLAGS       = -shared -Wl,-soname,lib$(OUTPUT_NAME).so.$(REV_MAJOR) $(_LINK_FLAGS) $(LINK_FLAGS) $(LINK_FLAGS_$(_CONF))
+mk_LINK_OUT_FLAG    = -o
+mk_LINK_OUTPUT_NAME = lib$(_OUTPUT_NAME).so
+mk_LINK_OUTPUT      = $(mk_LINK_OUTPUT_NAME).$(mk_REVISION_ID)
+mk_LINK_POSTPROC    = ln -fs $(mk_LINK_OUTPUT) $(mk_OUTPUT_TARGET)/$(mk_LINK_OUTPUT_NAME) && \
+                      ln -fs $(mk_LINK_OUTPUT) $(mk_OUTPUT_TARGET)/$(mk_LINK_OUTPUT_NAME).$(REV_MAJOR)
+mk_TARGET_FLAGS     = -fPIC $(TARGET_FLAGS) $(TARGET_FLAGS_$(_CONF))
+endif
+#
+ifeq ($(OUTPUT_TYPE),plugin)
+# for generating a plugin, which is a specialized shared library ...
+mk_LINK             = $(LINK)
+mk_LINK_PATHLIST    = $(_LINK_PATHLIST) $(LINK_PATHLIST) $(LINK_PATHLIST_$(_CONF))
+mk_LINK_LIBLIST     = $(LINK_LIBLIST) $(LINK_LIBLIST_$(_CONF))
+mk_LINK_FLAGS       = -shared -Wl,-soname,lib$(OUTPUT_NAME).so.$(REV_MAJOR) -Wl,-E $(_LINK_FLAGS) $(LINK_FLAGS) $(LINK_FLAGS_$(_CONF))
+mk_LINK_OUT_FLAG    = -o
+mk_LINK_OUTPUT_NAME = lib$(_OUTPUT_NAME).so
+mk_LINK_OUTPUT      = $(mk_LINK_OUTPUT_NAME).$(mk_REVISION_ID)
+mk_LINK_POSTPROC    = ln -fs $(mk_LINK_OUTPUT) $(mk_OUTPUT_TARGET)/$(mk_LINK_OUTPUT_NAME) && \
+                      ln -fs $(mk_LINK_OUTPUT) $(mk_OUTPUT_TARGET)/$(mk_LINK_OUTPUT_NAME).$(REV_MAJOR)
+mk_TARGET_FLAGS     = -fPIC $(TARGET_FLAGS) $(TARGET_FLAGS_$(_CONF)) -D$(mk_PLUGIN_ID)_EXPORTS
+mk_PLUGIN_ID        = $(shell echo $(OUTPUT_NAME) | tr "[:lower:]" "[:upper:]")
+endif
+#
+ifeq ($(OUTPUT_TYPE),binary)
+# for generating a binary ...
+mk_LINK            = $(LINK)
+mk_LINK_PATHLIST   = $(_LINK_PATHLIST) $(LINK_PATHLIST) $(LINK_PATHLIST_$(_CONF))
+mk_LINK_LIBLIST    = $(LINK_LIBLIST) $(LINK_LIBLIST_$(_CONF))
+mk_LINK_FLAGS      = $(_LINK_FLAGS) $(LINK_FLAGS) $(LINK_FLAGS_$(_CONF))
+mk_LINK_OUT_FLAG   = -o
+mk_LINK_OUTPUT     = $(_OUTPUT_NAME)
+mk_LINK_POSTPROC   = cat /dev/null
+mk_TARGET_FLAGS    = $(TARGET_FLAGS) $(TARGET_FLAGS_$(_CONF))
+endif
+
+# unittests are binaries
+mk_LINK_FLAGS_UT   = $(_LINK_FLAGS) $(LINK_FLAGS_$(_CONF))
+
+mk_CC              = $(CC)
+mk_DEPS						 = $(CPPC)
+#mk_CPPC            = $(mk_DEVELOPMENT_BASE)/makeIt/tools/gfilt -banner:N --compiler=$(CPPC)
+mk_CPPC            = $(CPPC)
+mk_CXX_FLAGS       = $(_CXX_FLAGS) $(CXX_FLAGS) $(CXX_FLAGS_$(_CONF)) 
+#										 -DREVISION_ID="$(mk_REVISION_ID)"
+#										 -DREVISION_DATE="$(mk_REVISION_DATE)" 
+#										 -DSVN_REVISION=$(mk_SVN_REV)
+mk_C_FLAGS         = $(_C_FLAGS) $(C_FLAGS) $(C_FLAGS_$(_CONF)) $(mk_CXX_FLAGS) $(mk_TARGET_FLAGS)
+mk_CPP_FLAGS       = $(_CPP_FLAGS) $(CPP_FLAGS) $(CPP_FLAGS_$(_CONF)) $(mk_CXX_FLAGS) $(mk_TARGET_FLAGS)
+
+#-- dependency file --
+mk_DEPS_FILE_NAME    = _deps.make
+mk_DEPS_FILE         = ./$(_CONF)/$(mk_DEPS_FILE_NAME)
+
+
+####
+# auto generated file lists
+##
+mk_UIC_SOURCE      = $(UIC_SOURCE) $(UIC_SOURCE_$(_CONF))
+mk_UIC_HEADER_USER = $(mk_UIC_SOURCE:%.ui=$(mk_UI_SOURCE_DIR)/%.hpp)
+mk_UIC_HEADER_GEN  = $(mk_UIC_SOURCE:%.ui=$(mk_HEADER_DIR)/uic_%.hpp)
+mk_UIC_HEADERS     = $(mk_UIC_HEADERS_USER) $(mk_UIC_HEADER_GEN)
+mk_UIC3_CPP_GEN    = $(mk_UIC_SOURCE:%.ui=uic_%.cpp)
+mk_UIC4_CPP_GEN    =
+mk_UIC_CPP_USER    = $(mk_UIC_SOURCE:%.ui=$(mk_UI_SOURCE_DIR)/%.cpp)
+mk_UIC_CPP_GEN     = $(mk_UIC$(QT_VERSION_ID)_CPP_GEN)
+mk_UIC_CPP         = $(mk_UIC_CPP_USER)
+
+mk_MOC_SOURCE      = $(MOC_SOURCE) $(MOC_SOURCE_$(_CONF))
+mk_MOC_HEADER_USER = $(mk_UIC_HEADER_USER) $(mk_MOC_SOURCE:%.cpp=$(mk_HEADER_DIR)/%.hpp)
+mk_MOC_HEADER_GEN  = 
+mk_MOC_HEADERS     = $(mk_MOC_HEADER_USER) $(mk_MOC_HEADER_GEN) $(mk_UIC_HEADER_GEN)
+mk_MOC_CPP_GEN_TMP = $(mk_MOC_HEADERS:$(mk_HEADER_DIR)/%.hpp=moc_%.cpp)
+mk_MOC_CPP_GEN     = $(mk_MOC_CPP_GEN_TMP:$(mk_UI_SOURCE_DIR)/%.hpp=moc_%.cpp)
+
+mk_LEX_SOURCE      = $(LEX_SOURCE) $(LEX_SOURCE_$(_CONF))
+mk_LEX_CPP_GEN     = $(mk_LEX_SOURCE:%.lex=lex_%.cpp)
+
+mk_YACC_SOURCE     = $(YACC_SOURCE) $(YACC_SOURCE_$(_CONF))
+mk_YACC_HEADER_GEN = $(mk_YACC_SOURCE:%.yacc=$(mk_HEADER_DIR)/%_tokens.hpp)
+mk_YACC_CPP_GEN    = $(mk_YACC_SOURCE:%.yacc=yacc_%.cpp)
+
+#-- collect generated header & cpp files --
+mk_HEADER_GEN    = $(mk_UIC_HEADER_GEN) $(mk_MOC_HEADER_GEN) $(mk_YACC_HEADER_GEN)
+mk_C_GEN         = $(mk_UTEST_C_GEN)
+mk_CPP_GEN       = $(mk_UIC_CPP_GEN) $(mk_MOC_CPP_GEN) $(mk_YACC_CPP_GEN) $(mk_LEX_CPP_GEN) $(mk_UTEST_CPP_GEN)
+mk_GEN_SOURCE    = $(mk_HEADER_GEN) $(mk_CPP_GEN) $(mk_C_GEN)
+
+mk_C_SOURCE      = $(C_SOURCE) $(C_SOURCE_$(_CONF)) $(mk_C_GEN)
+mk_C_OBJECTS     = $(mk_C_SOURCE:%.c=$(_CONF)/%.o)
+
+mk_CPP_SOURCE    = $(CPP_SOURCE) $(CPP_SOURCE_$(_CONF)) $(mk_MOC_SOURCE) $(mk_UIC_CPP) $(mk_CPP_GEN)
+mk_CPP_OBJECTS   = $(shell echo "$(mk_CPP_SOURCE:%.cpp=$(_CONF)/%.o)" | sed -e "s%$(_CONF)\/$(mk_UI_SOURCE_DIR)%$(_CONF)%g")
+
+mk_OBJECTS       = $(mk_C_OBJECTS) $(mk_CPP_OBJECTS)
+mk_FLUSH_OBJECTS = $(mk_OBJECTS:$(_CONF)/%.o=%.o)
+
+#-- linkage variables --
+mk_LINK_INPUT    = $(mk_OBJECTS)
+
+
+#-- default make target --
+default:
+	$(MAKE) debug
+
+
+# Setting this affects the dependency checks in a strange manner!
+# With SECONDARY set, make does not care for missing *.o-files any more, but
+#   thinks that it is sufficient to check whether the linker output is up-to-date! how come?
+# do not delete uic_*- and moc_*-files
+#.SECONDARY: $(mk_MOC_CPP_GEN) $(mk_UIC_HEADERS) $(mk_UIC_CPP) \
+#            $(UNITTESTS:%.h=$(_CONF)/%.cpp)
+
+.PHONY: $(mk_CONFIGURATIONS) $(mk_CONFIGURATIONS:%=%_deps) $(mk_HELP_SECTIONS) \
+        unittests
+
+
+$(mk_CONFIGURATIONS):
+	$(MAKE) _CONF="$@" _OUTPUT_NAME="$(OUTPUT_NAME)" mk_buildChain
+
+
+####
+# build chain
+#  It's NOT intended to call this target directly!
+##
+mk_buildChain:
+	@echo "=== start build for configuration '"$(_CONF)"' ==="
+	$(MAKE) $(_CONF)_deps
+	$(MAKE) $(mk_REBUILD_CRITERIA)
+	$(MAKE) $(mk_OUTPUT_TARGET)/$(mk_LINK_OUTPUT)
+	#$(MAKE) unittests
+	@echo "=== $(_OUTPUT_NAME) '"$(_CONF)"' up-to-date ==="
+
+
+# -- building dependency list --
+#  This target might be called directly.
+#  We infer _CONF from the targets name.
+$(mk_CONFIGURATIONS:%=%_deps):
+	mkdir -p ./$(@:%_deps=%)
+	$(MAKE) _CONF=$(@:%_deps=%) _DO_DEPS=1 $(@:%_deps=%)/$(mk_DEPS_FILE_NAME)
+
+
+$(mk_DEPS_FILE):
+	@if [ "$(_DO_DEPS)" != "" ]; then \
+		if [ "`echo $(mk_GEN_SOURCE) | sed 's/ //g'`" != "" ]; then \
+			echo $(MAKE) _CONF="$(_CONF)" $(mk_GEN_SOURCE) && \
+			$(MAKE) _DO_DEPS="" _CONF="$(_CONF)" $(mk_GEN_SOURCE); \
+		fi; \
+		echo "$(mk_DEPS) $(mk_INCLUDE_PATHLIST) $(mk_C_FLAGS) $(mk_CPP_FLAGS) -MM $(mk_C_SOURCE) $(mk_CPP_SOURCE) > $(mk_DEPS_FILE)" && \
+		$(mk_DEPS) $(mk_INCLUDE_PATHLIST) $(mk_C_FLAGS) $(mk_CPP_FLAGS) -MM $(mk_C_SOURCE) $(mk_CPP_SOURCE) | \
+		sed -e "s#\(.*\).o: #$(_CONF)/\1.o: #" > $@; \
+	fi
+
+
+#-- rebuild criteria --
+$(mk_REBUILD_CRITERIA):
+	$(MAKE) "_REBUILD_CRITERION=$(@: % =%)" "_REBUILD_ARGUMENT=$($@: % =%)" $($@)
+
+#-- glue target for rebuild criterion --
+$($(_REBUILD_CRITERION)): $(_CONF)/_$(_REBUILD_ARGUMENT)_$(_REBUILD_CRITERION).make
+
+$(_CONF)/_$(_REBUILD_ARGUMENT)_$(_REBUILD_CRITERION).make:
+	@rm -f $(_CONF)/_*_$(_REBUILD_CRITERION).make
+	@$(MAKE) flush_objects
+	@touch $@
+
+
+#-- linking --
+mk_link_$(OUTPUT_TYPE):
+	@echo "=== linking $(_OUTPUT_NAME), creating type '"$(OUTPUT_TYPE)"' ==="
+	$(mk_LINK) $(mk_LINK_FLAGS) $(mk_LINK_OUT_FLAG) $(mk_OUTPUT_TARGET)/$(mk_LINK_OUTPUT) $(mk_LINK_INPUT) $(mk_LINK_PATHLIST) $(mk_LINK_LIBLIST) && \
+	$(mk_LINK_POSTPROC)
+
+#-- glue target for linking output --
+$(mk_OUTPUT_TARGET)/$(mk_LINK_OUTPUT): $(mk_LINK_INPUT)
+	@$(MAKE) mk_link_$(OUTPUT_TYPE)
+
+
+#-- unittests --
+unittests: $(UNITTESTS:%_ut.h=$(mk_OUTPUT_TARGET)/ut_%)
+	@ for i in $^ ; do echo -n "$$i: " ; $$i ; done
+
+####
+# special targets
+##
+#-- cleaning the build folder for given configuration --
+clean: flush_objects
+	@if [ -d $(_CONF) ]; then \
+		cd ./$(_CONF) && \
+			rm -f _*.make && \
+		cd .. && \
+		echo "=== cleaned build folder for configuration $(_CONF) ==="; \
+	fi
+
+#-- flushing object files for given configuration --
+flush_objects:
+	@if [ -d $(_CONF) ]; then \
+		echo "=== flushing objects of configuration '"$(_CONF)"' ===" && \
+		cd ./$(_CONF) && \
+			rm -f $(mk_FLUSH_OBJECTS) && \
+		cd ..; \
+	fi
+
+#-- clean build folders for all configurations --
+mrproper:
+	@echo "=== cleaning configurations properly ==="
+	rm -f $(mk_GEN_SOURCE)
+	@for i in $(mk_CONFIGURATIONS); do \
+		$(MAKE) clean _CONF=$$i; \
+	done
+
+#-- generate ASCII-translation files (to be edited)
+lupdate:
+	$(LUPDATE) $(UI_PROJECT)
+
+#-- generate binary translation files (after editing)
+lrelease:
+	$(LRELEASE) $(UI_PROJECT)
+
+#-- print global help --
+help: $(mk_HELP_SECTIONS)
+
+help_global:
+	@echo "Make-Manual for building $(OUTPUT_NAME)" && echo
+	@echo "AVAILABLE CONFIGURATIONS:"
+	@echo "  $(mk_CONFIGURATIONS)" && echo
+	@echo "OTHER TARGETS:"
+	@echo "  clean _CONF=<CONFIG>  - clean configuration <CONFIG> (one out of {$(mk_CONFIGURATIONS: % =%)}), but keep the linker output."
+	@echo "  mrproper              - clean all configuration folders, but keep the linker output." && echo
+
+
+#-- debug target, printing variable contents --
+echo_%:
+	@echo "$* = $($*)"
+
+
+####
+# pattern rules
+##
+#-- moc --
+moc_%.cpp : $(mk_HEADER_DIR)/%.hpp
+	$(MOC) $< -o $@
+
+moc_%.cpp : $(mk_UI_SOURCE_DIR)/%.hpp
+	$(MOC) $< -o $@
+
+#-- uic --
+$(mk_HEADER_DIR)/uic_%.hpp : $(mk_UI_SOURCE_DIR)/%.ui
+	$(UIC) $< -o $@
+
+uic_%.cpp : $(mk_HEADER_DIR)/uic_%.hpp $(mk_UI_SOURCE_DIR)/%.ui 
+	$(UIC) -impl $^ -o $@
+
+
+#-- c files --
+$(_CONF)/%.o : %.c
+	@echo "    compiling $<"
+	$(CC) $(mk_INCLUDE_PATHLIST) $(mk_C_FLAGS) -c $< -o $@
+
+#-- c++ files --
+$(_CONF)/%.o : %.cpp
+	@echo "    compiling $<"
+	$(mk_CPPC) $(mk_INCLUDE_PATHLIST) $(mk_CPP_FLAGS) -c $< -o $@
+
+$(_CONF)/%.o : $(mk_UI_SOURCE_DIR)/%.cpp
+	@echo "    compiling $<"
+	$(mk_CPPC) $(mk_INCLUDE_PATHLIST) $(mk_CPP_FLAGS) -c $< -o $@
+
+#-- unittests --
+ut_%.cpp : unittest/%_ut.h
+	@echo "    generating unittest source $@"
+	$(DEVELOPMENT_DIR)/$(mk_PACKAGE_ID)/cxxtest/cxxtestgen.pl -o $@ $<
+
+# hardcoding the library paths into the executable (-rpath) lets us run 
+# the unittests from this Makefile
+$(_CONF)/ut_% : ut_%.cpp $(LINK_OBJECTS_UT:%=$(_CONF)/%)
+	@echo "=== linking unittest $@ ==="
+	$(mk_CPPC) $(mk_INCLUDE_PATHLIST)                                 \
+		-I$(DEVELOPMENT_DIR)/$(mk_PACKAGE_ID)/cxxtest                   \
+		$(mk_CPP_FLAGS:-pedantic=)                                      \
+		-o $@ $(mk_LINK_FLAGS_UT) $(mk_LINK_PATHLIST)                   \
+		$(DEVELOPMENT_DIR)/$(mk_PACKAGE_ID)/cxxtest/main.cpp $<         \
+		$(LINK_OBJECTS_UT:%=$(_CONF)/%) $(LINK_PATHLIST_UT)             \
+		$(LINK_LIBLIST_UT)                                              \
+		$(mk_LINK_PATHLIST:-L%=-Wl,-rpath=%) $(LINK_PATHLIST_UT:-L%=-Wl,-rpath=%)
+
+#-- lex & yacc --
+lex_%.cpp : %.lex
+	flex --prefix=$*_ -o lex_$*.cpp $<
+
+yacc_%.cpp $(mk_HEADER_DIR)/%_tokens.hpp : %.yacc
+	bison --name-prefix=$*_ --defines=$(mk_HEADER_DIR)/$*_tokens.hpp --debug --verbose -o yacc_$*.cpp $<
+
+
+#-- include dependency file --
+sinclude $(mk_DEPS_FILE)
+

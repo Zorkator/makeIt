@@ -1,0 +1,34 @@
+# -- qt tools --
+mk_QT_TOOLS_DIR = $(QT$(QT_VERSION_ID)_TOOLS_DIR)
+MOC      = $(mk_QT_TOOLS_DIR)/moc
+UIC      = $(mk_QT_TOOLS_DIR)/uic
+LUPDATE  = $(mk_QT_TOOLS_DIR)/lupdate
+LRELEASE = $(mk_QT_TOOLS_DIR)/lrelease
+
+
+mk_UIC_HEADERS   = $(UIC_SOURCE:%.ui=$(mk_HEADER_DIR)/uic_%.h)
+mk_UIC_CPP_GEN   = $(UIC_SOURCE:%.ui=uic_%.cpp)
+mk_MOC_HEADERS   = $(MOC_SOURCE:%.cpp=$(mk_HEADER_DIR)/%.h) $(mk_UIC_HEADERS)
+mk_MOC_CPP_GEN   = $(mk_MOC_HEADERS:$(mk_HEADER_DIR)/%.h=moc_%.cpp)
+
+#.SECONDARY: $(mk_MOC_CPP_GEN) $(mk_UIC_HEADERS) $(mk_UIC_CPP_GEN) \
+#            $(UNITTESTS:%.h=$(_CONF)/%.cpp)
+#-- generate ASCII-translation files (to be edited)
+lupdate:
+	$(LUPDATE) $(UI_PROJECT)
+
+#-- generate binary translation files (after editing)
+lrelease:
+	$(LRELEASE) $(UI_PROJECT)
+
+#-- moc --
+moc_%.cpp : $(mk_HEADER_DIR)/%.h
+	$(MOC) $< -o $@
+
+#-- uic --
+$(mk_HEADER_DIR)/uic_%.h : $(mk_UI_SOURCE_DIR)/%.ui
+	$(UIC) $< -o $@
+
+uic_%.cpp : $(mk_UI_SOURCE_DIR)/%.ui $(mk_HEADER_DIR)/uic_%.h
+	$(UIC) -impl $(<:$(mk_UI_SOURCE_DIR)/%.ui=$(mk_HEADER_DIR)/uic_%.h) $< -o $@
+
