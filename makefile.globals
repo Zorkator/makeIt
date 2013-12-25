@@ -99,6 +99,7 @@ LRELEASE = $(mk_QT_TOOLS_DIR)/lrelease
 ###
 # check and set defaults
 ##
+
 #-- OUTPUT_NAME
 ifeq  ($(OUTPUT_NAME),)
 OUTPUT_NAME = output
@@ -117,13 +118,6 @@ endif
 #-- REV_MINOR
 ifeq ($(REV_MINOR),)
 REV_MINOR = 0
-endif
-
-#-- OUTPUT_PREFIX
-ifeq ($(OUTPUT_PREFIX),)
-mk_OUTPUT_TARGET   = $(_CONF)
-else
-mk_OUTPUT_TARGET   = $(_CONF)/$(OUTPUT_PREFIX)
 endif
 
 # REVISION_ID
@@ -147,7 +141,9 @@ mk_REVISION_DATE = $(REVISION_DATE)
 endif
 
 # SVN REVISION
+ifeq ($(NO_SVN),)
 SVN_REV = $(shell svn info | grep ^Revision | sed -e 's/Revision: //')
+endif
 ifeq ($(SVN_REV),)
 mk_SVN_REV = "unknown"
 else
@@ -172,6 +168,18 @@ endif
 ####
 # make internals
 ##
+#-- list of configurations --
+mk_CONFIGURATIONS   = debug profile release $(USER_CONFIGURATIONS: % =%)
+
+#-- default make target --
+default:
+	$(MAKE) debug
+
+
+#-- list of rebuild criteria --
+mk_REBUILD_CRITERIA = OUTPUT_TYPE $(USER_REBUILD_CRITERIA: % =%)
+
+#-- include pathlist
 mk_INCLUDE_PATHLIST = -I. $(INCLUDE_PATHLIST) $(INCLUDE_PATHLIST_$(_CONF))
 
 #-- predefined build configurations --
@@ -190,14 +198,15 @@ C_FLAGS_release     = -DDCC_RELEASE -DQT_NO_DEBUG -O2
 CPP_FLAGS_release   = -DDCC_RELEASE -DQT_NO_DEBUG -O2
 LINK_FLAGS_release := $(LINK_FLAGS_release) -s
 
-#-- list of configurations --
-mk_CONFIGURATIONS   = debug profile release $(USER_CONFIGURATIONS: % =%)
-
-#-- list of rebuild criteria --
-mk_REBUILD_CRITERIA = OUTPUT_TYPE $(USER_REBUILD_CRITERIA: % =%)
-
 #-- help sections --
 mk_HELP_SECTIONS    = help_global $(HELP_SECTIONS)
+
+#-- output_prefix
+ifeq ($(OUTPUT_PREFIX),)
+mk_OUTPUT_TARGET   = $(_CONF)
+else
+mk_OUTPUT_TARGET   = $(_CONF)/$(OUTPUT_PREFIX)
+endif
 
 
 ####
@@ -321,11 +330,6 @@ mk_FLUSH_OBJECTS = $(mk_OBJECTS:$(_CONF)/%.o=%.o)
 
 #-- linkage variables --
 mk_LINK_INPUT    = $(mk_OBJECTS)
-
-
-#-- default make target --
-default:
-	$(MAKE) debug
 
 
 # Setting this affects the dependency checks in a strange manner!
@@ -493,27 +497,30 @@ $(_CONF)/%.o : $(mk_UI_SOURCE_DIR)/%.cpp
 #-- unittests --
 ut_%.cpp : unittest/%_ut.h
 	@echo "    generating unittest source $@"
-	$(DEVELOPMENT_DIR)/$(mk_PACKAGE_ID)/cxxtest/cxxtestgen.pl -o $@ $<
+	$(mk_CXXTEST_DIR)/cxxtestgen.pl -o $@ $<
 
 # hardcoding the library paths into the executable (-rpath) lets us run 
 # the unittests from this Makefile
-$(_CONF)/ut_% : ut_%.cpp $(LINK_OBJECTS_UT:%=$(_CONF)/%)
+$(_CONF)/ut_% : ut_%.cpp $(_CONF)\/ $(LINK_OBJECTS_UT:%=$(_CONF)/%)
 	@echo "=== linking unittest $@ ==="
-	$(mk_CPPC) $(mk_INCLUDE_PATHLIST)                                 \
-		-I$(DEVELOPMENT_DIR)/$(mk_PACKAGE_ID)/cxxtest                   \
-		$(mk_CPP_FLAGS:-pedantic=)                                      \
-		-o $@ $(mk_LINK_FLAGS_UT) $(mk_LINK_PATHLIST)                   \
-		$(DEVELOPMENT_DIR)/$(mk_PACKAGE_ID)/cxxtest/main.cpp $<         \
-		$(LINK_OBJECTS_UT:%=$(_CONF)/%) $(LINK_PATHLIST_UT)             \
-		$(LINK_LIBLIST_UT)                                              \
+	$(mk_CPPC) $(mk_INCLUDE_PATHLIST)                          \
+		-I$(mk_CXXTEST_DIR)                                     \
+		$(mk_CPP_FLAGS:-pedantic=)                              \
+		-o $@ $(mk_LINK_FLAGS_UT) $(mk_LINK_PATHLIST)           \
+		$(mk_CXXTEST_DIR)/main.cpp $<                           \
+		$(LINK_OBJECTS_UT:%=$(_CONF)/%) $(LINK_PATHLIST_UT)     \
+		$(LINK_LIBLIST_UT)                                      \
 		$(mk_LINK_PATHLIST:-L%=-Wl,-rpath=%) $(LINK_PATHLIST_UT:-L%=-Wl,-rpath=%)
 
 #-- lex & yacc --
 lex_%.cpp : %.lex
-	flex --prefix=$*_ -o lex_$*.cpp $<
+	flex -o lex_$*.cpp $<
+#	flex --prefix=$*_ -o lex_$*.cpp $<
+
 
 yacc_%.cpp $(mk_HEADER_DIR)/%_tokens.hpp : %.yacc
-	bison --name-prefix=$*_ --defines=$(mk_HEADER_DIR)/$*_tokens.hpp --debug --verbose -o yacc_$*.cpp $<
+	bison --defines=$(mk_HEADER_DIR)/$*_tokens.hpp --debug --verbose -o yacc_$*.cpp $<
+#	bison --name-prefix=$*_ --defines=$(mk_HEADER_DIR)/$*_tokens.hpp --debug --verbose -o yacc_$*.cpp $<
 
 
 #-- include dependency file --

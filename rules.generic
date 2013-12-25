@@ -20,7 +20,6 @@ $(mk_CONFIGURATIONS):
 	$(MAKE) _CFG="$@" mk_BuildChain
 
 mk_BuildChain: $(MSG_BUILD)
-	@echo "=== start build for configuration '"$(_CFG)"' ==="
 	$(MAKE) _CFG="$(_CFG)" $(mk_REBUILD_CRITERIA)
 	#$(MAKE) _CFG="$(_CFG)" $(mk_TARGET_OUTPUT)
 	@echo "=== $(mk_TARGET_OUTPUT) '"$(_CFG)"' up-to-date ==="
@@ -45,11 +44,4 @@ $(_CFG)/_$(_REBUILD_ARGUMENT)_$(_REBUILD_CRITERION).make:
 # Flush Secondary - delete intermediate files
 #
 mk_FlushSecondary: $(MSG_FLUSH)
-
-#--
-# Directory Target
-# - allows to generate directories via dependency list
-#
-"%/":
-	@mkdir -p $*
 

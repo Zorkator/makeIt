@@ -1,12 +1,18 @@
 
-USER_CONFIGURATIONS   = debug release special
-USER_REBUILD_CRITERIA = 
+#USER_CONFIGURATIONS   = debug release special
+#USER_REBUILD_CRITERIA = 
+#
+#MSG_FLUSH = "gestern\ telefon"
+#
+DEVELOPMENT_BASE = ../..
+#
+#include $(DEVELOPMENT_BASE)/makeIt/rules.generic
+#include $(DEVELOPMENT_BASE)/makeIt/rules.debug
+#include $(DEVELOPMENT_BASE)/makeIt/rules.msg
+#include $(DEVELOPMENT_BASE)/makeIt/rules.help
+#
 
-MSG_FLUSH = "gestern\ telefon"
+mk_rule_base = ../../makeIt
 
-include $(DEVELOPMENT_BASE)/make/rules.generic
-include $(DEVELOPMENT_BASE)/make/rules.debug
-include $(DEVELOPMENT_BASE)/make/rules.msg
-include $(DEVELOPMENT_BASE)/make/rules.help
-
+include $(mk_rule_base)/rules.base
 

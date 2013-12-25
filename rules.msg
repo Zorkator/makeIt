@@ -1,11 +1,9 @@
 
-
-MSG_LIST := $(MSG_LIST) $(MSG_NULL)
-MSG_NULL  = "no\ message"
+mk_MsgList := $(mk_MsgList)
 
 #--
 # Message print target
 #
-$(MSG_LIST):
+$(mk_MsgList):
 	@echo $@
 
