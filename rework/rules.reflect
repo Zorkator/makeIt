@@ -1,0 +1,9 @@
+
+#-- debug target, printing variable contents --
+mk_TARGETS := $(mk_TARGETS) echo.*
+
+echo.%:
+	@echo $* = $($*)
+
+echo.*_doc = echo make variable, e.g. make echo.CFG
+

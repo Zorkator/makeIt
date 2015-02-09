@@ -1,0 +1,61 @@
+
+include $(MAKEIT_DIR)/rules.base
+include $(MAKEIT_DIR)/rules.dir
+include $(MAKEIT_DIR)/rules.log
+
+mk_VARIABLES := $(mk_VARIABLES) CMPL TYPE ARCH CFG TAG BUILD_DIR OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE
+mk_TARGETS   := $(mk_TARGETS) clean
+
+#-- variables ...
+
+CMPL              ?= gcc
+CMPL_doc          ?= id of compiler suite: {gcc, intel}
+
+TYPE              ?= exe
+TYPE_doc          ?= build type: {exe, static, shared}
+
+ARCH              ?= 64
+ARCH_doc          ?= architecture id: {32, 64}
+
+CFG               ?= debug
+CFG_doc           ?= name of build configuration
+
+TAG               ?= $(CMPL).$(TYPE).$(ARCH).$(CFG)
+TAG_doc           ?= string for tagging build directory. default: <CMPL>.<TYPE>.<ARCH>.<CFG>
+
+BUILD_DIR         ?= $(TAG)
+BUILD_DIR_doc     ?= working directory for building object files. default: <TAG>
+
+OUT_DIR           ?= $(BUILD_DIR)
+OUT_DIR_doc       ?= output directory for putting the output file(s)
+
+OUT_NAME          ?= outname
+OUT_NAME_doc      ?= the base name of the final result
+
+OUT_FILE_NAME     ?= $(OUT_NAME).$(TAG)$(mk_OUT_EXT)
+OUT_FILE_NAME_doc ?= the file name of the final result
+
+OUT_FILE          ?= $(OUT_DIR)/$(OUT_FILE_NAME)
+OUT_FILE_doc      ?= path and file name of the final result
+
+
+#-- targets ...
+
+clean_doc = clear build directory [$(BUILD_DIR)] by removing object files
+clean:
+	@rm -f $(mk_OBJECTS)
+
+
+#-- internal ...
+
+mk_OUT_EXT_static = .a
+mk_OUT_EXT_shared = .so
+mk_OUT_EXT_exe    = .exe
+mk_OUT_EXT        = $(mk_OUT_EXT_$(TYPE))
+
+mk_FILE_FLAGS     = $(sort $(1)_FLAGS.$(CMPL) $(1)_FLAGS.$(CFG) $(1)_FLAGS.$(ARCH) $(1)_FLAGS.$(TYPE))
+mk_FILE_OBJECT    = $(patsubst %.$(1),$(BUILD_DIR)/%.o,$(2))
+
+mk_FILE_TYPES    := $(mk_FILE_TYPES)
+mk_OBJECTS        = $(foreach t,$(mk_FILE_TYPES),$(call mk_FILE_OBJECT,$(t),$(FILES_$(t))))
+

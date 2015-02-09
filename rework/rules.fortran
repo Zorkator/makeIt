@@ -1,0 +1,17 @@
+
+mk_FILE_TYPES := $(mk_FILE_TYPES) f95 f90 f for
+
+FILES_f   ?= $(wildcard *.f)
+FILES_for ?= $(wildcard *.for)
+FILES_f90 ?= $(wildcard *.f90)
+FILES_f95 ?= $(wildcard *.f95)
+
+
+#-- rules ...
+
+$(BUILD_DIR)/%.o: %.f
+	$(FC) $(FC_c) $(FC_ALL_FLAGS) $(call mk_FILE_FLAGS, $(notdir $*)) $< $(FC_o) $@ $(cmd_LOG)
+
+$(BUILD_DIR)/%.o: %.f90
+	$(FC) $(FC_c) $(FC_ALL_FLAGS) $(call mk_FILE_FLAGS, $(notdir $*)) $< $(FC_o) $@ $(cmd_LOG)
+

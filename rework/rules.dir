@@ -1,0 +1,5 @@
+
+#-- directory target, generate directories via dependency list
+%/:
+	@mkdir -p $@
+
