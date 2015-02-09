@@ -1,24 +1,26 @@
 
 include $(MAKEIT_DIR)/rules.reflect
 
-mk_VARIABLES := $(mk_VARIABLES)
-mk_TARGETS   := $(mk_TARGETS) help
+mk_PARAMETERS += 
+mk_TARGETS    += help
 
 #-- targets ...
 
-help_doc = print overview over supported variables and targets
+help_doc = print overview over supported parameters and targets
 help:
-	@echo $(mk_VAR_TAB) $(info )
-	@echo $(mk_TGT_TAB)
+	@echo == SUPPORTED TARGETS ==
+	@echo \ $(mk_TGT_TAB)
+	@echo == SUPPORTED PARAMETERS ==
+	@echo \ $(mk_VAR_TAB)
 
 
 #-- internal ...
 
-mk_VAR_DOC = $(info <$(1)>     $($(1)_doc) [$($(1))])
-mk_VAR_TAB = $(info == SUPPORTED VARIABLES ==) $(foreach v,$(sort $(mk_VARIABLES)),$(call mk_VAR_DOC,$(v)))
+mk_VAR_DOC = "$(shell printf '%-15s %s  [%s]\\n' '$(1)' '$($(1)_doc)' '$($(1))')"
+mk_VAR_TAB = $(foreach v,$(sort $(mk_PARAMETERS)),$(call mk_VAR_DOC,$(v)))
 
-mk_TGT_DOC = $(info $(1)    $($(1)_doc))
-mk_TGT_TAB = $(info == SUPPORTED TARGETS ==) $(foreach t,$(sort $(mk_TARGETS)),$(call mk_TGT_DOC,$(t)))
+mk_TGT_DOC = "$(shell printf '%-10s %s\\n' '$(1)' '$($(1)_doc)')"
+mk_TGT_TAB = $(foreach t,$(sort $(mk_TARGETS)),$(call mk_TGT_DOC,$(t)))
 
 mk_lower   = $(shell echo $(1) | tr A-Z a-z)
 mk_upper   = $(shell echo $(1) | tr a-z A-Z)

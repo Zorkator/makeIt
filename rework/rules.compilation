@@ -3,43 +3,58 @@ include $(MAKEIT_DIR)/rules.base
 include $(MAKEIT_DIR)/rules.dir
 include $(MAKEIT_DIR)/rules.log
 
-mk_VARIABLES := $(mk_VARIABLES) CMPL TYPE ARCH CFG TAG BUILD_DIR OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE
-mk_TARGETS   := $(mk_TARGETS) clean
+mk_PARAMETERS     += CMPL TYPE ARCH CFG TAG BUILD_DIR OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE
+mk_TARGETS        += clean $(CONFIGURATIONS)
+mk_FILE_TYPES     += 
 
-#-- variables ...
+CONFIGURATIONS     ?= debug release
+debug_doc          ?= target for building with debug options
+release_doc        ?= target for building with optimization and without debug options
 
-CMPL              ?= gcc
-CMPL_doc          ?= id of compiler suite: {gcc, intel}
+#-- parameters ...
 
-TYPE              ?= exe
-TYPE_doc          ?= build type: {exe, static, shared}
+CMPL               ?= gcc
+CMPL_doc           ?= id of compiler suite: {gcc, intel}
 
-ARCH              ?= 64
-ARCH_doc          ?= architecture id: {32, 64}
+TYPE               ?= exe
+TYPE_doc           ?= build type: {exe, static, shared}
 
-CFG               ?= debug
-CFG_doc           ?= name of build configuration
+ARCH               ?= 64
+ARCH_doc           ?= architecture id: {32, 64}
 
-TAG               ?= $(CMPL).$(TYPE).$(ARCH).$(CFG)
-TAG_doc           ?= string for tagging build directory. default: <CMPL>.<TYPE>.<ARCH>.<CFG>
+CFG                ?= debug
+CFG_doc            ?= name of build configuration
 
-BUILD_DIR         ?= $(TAG)
-BUILD_DIR_doc     ?= working directory for building object files. default: <TAG>
+TAG                ?= $(CMPL).$(TYPE).$(ARCH).$(CFG)
+TAG_doc            ?= string for tagging build directory. default: <CMPL>.<TYPE>.<ARCH>.<CFG>
 
-OUT_DIR           ?= $(BUILD_DIR)
-OUT_DIR_doc       ?= output directory for putting the output file(s)
+BUILD_DIR          ?= $(TAG)
+BUILD_DIR_doc      ?= working directory for building object files. default: <TAG>
 
-OUT_NAME          ?= outname
-OUT_NAME_doc      ?= the base name of the final result
+OUT_DIR            ?= $(BUILD_DIR)
+OUT_DIR_doc        ?= output directory for putting the output file(s)
 
-OUT_FILE_NAME     ?= $(OUT_NAME).$(TAG)$(mk_OUT_EXT)
-OUT_FILE_NAME_doc ?= the file name of the final result
+OUT_NAME           ?= outname
+OUT_NAME_doc       ?= the base name of the final result
 
-OUT_FILE          ?= $(OUT_DIR)/$(OUT_FILE_NAME)
-OUT_FILE_doc      ?= path and file name of the final result
+OUT_FILE_NAME      ?= $(OUT_NAME).$(TAG)$(mk_OUT_EXT)
+OUT_FILE_NAME_doc  ?= the file name of the final result
+
+OUT_FILE           ?= $(OUT_DIR)/$(OUT_FILE_NAME)
+OUT_FILE_doc       ?= path and file name of the final result
+
+SRC_FILES          ?= $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t))) 
 
 
 #-- targets ...
+
+$(CONFIGURATIONS):
+	$(MAKE) mk_build CFG=$@
+
+
+mk_build: $(BUILD_DIR)\/
+	@echo done
+
 
 clean_doc = clear build directory [$(BUILD_DIR)] by removing object files
 clean:
@@ -53,9 +68,6 @@ mk_OUT_EXT_shared = .so
 mk_OUT_EXT_exe    = .exe
 mk_OUT_EXT        = $(mk_OUT_EXT_$(TYPE))
 
-mk_FILE_FLAGS     = $(sort $(1)_FLAGS.$(CMPL) $(1)_FLAGS.$(CFG) $(1)_FLAGS.$(ARCH) $(1)_FLAGS.$(TYPE))
-mk_FILE_OBJECT    = $(patsubst %.$(1),$(BUILD_DIR)/%.o,$(2))
-
-mk_FILE_TYPES    := $(mk_FILE_TYPES)
-mk_OBJECTS        = $(foreach t,$(mk_FILE_TYPES),$(call mk_FILE_OBJECT,$(t),$(FILES_$(t))))
+mk_OBJECTS        = $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(SRC_FILES)))
+mk_FILE_FLAGS     = $($(1)_FLAGS.$(CMPL)) $($(1)_FLAGS.$(CFG)) $($(1)_FLAGS.$(ARCH)) $($(1)_FLAGS.$(TYPE))
 

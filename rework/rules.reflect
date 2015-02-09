@@ -1,6 +1,6 @@
 
 #-- debug target, printing variable contents --
-mk_TARGETS := $(mk_TARGETS) echo.*
+mk_TARGETS += echo.*
 
 echo.%:
 	@echo $* = $($*)

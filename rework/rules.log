@@ -1,7 +1,7 @@
 
-mk_VARIABLES := $(mk_VARIABLES) LOG LOG_FILE
+mk_PARAMETERS += LOG LOG_FILE
 
-#-- variables ...
+#-- parameters ...
 
 LOG          ?= on
 LOG_doc      ?= switch to enable/disable logging {on, off}
@@ -11,7 +11,7 @@ LOG_FILE_doc ?= file for writing log messages to
 
 #-- definitions for build step logging ...
 
-mk_LOG_on  = 2>&1 | tee -a $(mk_LOGFILE)
+mk_LOG_on  = 2>&1 | tee -a $(LOG_FILE)
 mk_LOG_off =
 cmd_LOG    = $(mk_LOG_$(LOG))
 
