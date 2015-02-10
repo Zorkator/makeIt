@@ -8,10 +8,11 @@ mk_TARGETS    += help
 
 help_doc = print overview over supported parameters and targets
 help:
+	@echo -e \ $(TARGET_doc)\\n
 	@echo == SUPPORTED TARGETS ==
-	@echo \ $(mk_TGT_TAB)
+	@echo -e \ $(mk_TGT_TAB)
 	@echo == SUPPORTED PARAMETERS ==
-	@echo \ $(mk_VAR_TAB)
+	@echo -e \ $(mk_VAR_TAB)
 
 
 #-- internal ...
@@ -24,4 +25,9 @@ mk_TGT_TAB = $(foreach t,$(sort $(mk_TARGETS)),$(call mk_TGT_DOC,$(t)))
 
 mk_lower   = $(shell echo $(1) | tr A-Z a-z)
 mk_upper   = $(shell echo $(1) | tr a-z A-Z)
+mk_csv     = $(subst $(mk_space),$(mk_comma),$(1))
+mk_ssv     = $(subst $(mk_comma),$(mk_space),$(1))
+mk_null   :=
+mk_space  := $(mk_null) #
+mk_comma  := ,
 

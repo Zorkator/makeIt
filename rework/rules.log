@@ -6,12 +6,12 @@ mk_PARAMETERS += LOG LOG_FILE
 LOG          ?= on
 LOG_doc      ?= switch to enable/disable logging {on, off}
 
-LOG_FILE     ?= _build.log
-LOG_FILE_doc ?= file for writing log messages to
+LOG_FILE     ?= $(BUILD_DIR)/_build.log
+LOG_FILE_doc ?= file for logging build messages. default: <BUILD_DIR>/_build.log
 
 #-- definitions for build step logging ...
 
-mk_LOG_on  = 2>&1 | tee -a $(LOG_FILE)
-mk_LOG_off =
-cmd_LOG    = $(mk_LOG_$(LOG))
+mk_LOG_on     = 2>&1 | tee -a $(LOG_FILE)
+mk_LOG_off    =
+cmd_LOG       = $(mk_LOG_$(LOG))
 

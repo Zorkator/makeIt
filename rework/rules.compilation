@@ -6,24 +6,25 @@ include $(MAKEIT_DIR)/rules.log
 mk_PARAMETERS     += CMPL TYPE ARCH CFG TAG BUILD_DIR OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE
 mk_TARGETS        += clean $(CONFIGURATIONS)
 mk_FILE_TYPES     += 
+mk_TYPES          += exe static shared
 
-CONFIGURATIONS     ?= debug release
-debug_doc          ?= target for building with debug options
-release_doc        ?= target for building with optimization and without debug options
+CONFIGURATIONS    ?= debug release
+debug_doc         ?= target for building with debug options
+release_doc       ?= target for building with optimization and without debug options
 
 #-- parameters ...
 
-CMPL               ?= gcc
-CMPL_doc           ?= id of compiler suite: {gcc, intel}
+CMPL               ?= $(firstword $(mk_COMPILERS))
+CMPL_doc           ?= name of compiler: {$(call mk_csv,$(mk_COMPILERS))}
 
-TYPE               ?= exe
-TYPE_doc           ?= build type: {exe, static, shared}
+TYPE               ?= $(firstword $(mk_TYPES))
+TYPE_doc           ?= build type: {$(call mk_csv,$(mk_TYPES))}
 
-ARCH               ?= 64
-ARCH_doc           ?= architecture id: {32, 64}
+ARCH               ?= $(firstword $(mk_ARCHITECTURES))
+ARCH_doc           ?= architecture id: {$(call mk_csv,$(mk_ARCHITECTURES))}
 
-CFG                ?= debug
-CFG_doc            ?= name of build configuration
+CFG                ?= $(firstword $(CONFIGURATIONS))
+CFG_doc            ?= name of build configuration: {$(call mk_csv,$(CONFIGURATIONS))}
 
 TAG                ?= $(CMPL).$(TYPE).$(ARCH).$(CFG)
 TAG_doc            ?= string for tagging build directory. default: <CMPL>.<TYPE>.<ARCH>.<CFG>
@@ -43,23 +44,24 @@ OUT_FILE_NAME_doc  ?= the file name of the final result
 OUT_FILE           ?= $(OUT_DIR)/$(OUT_FILE_NAME)
 OUT_FILE_doc       ?= path and file name of the final result
 
-SRC_FILES          ?= $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t))) 
-
+SOURCE_FILES       ?= $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t))) 
 
 #-- targets ...
 
-$(CONFIGURATIONS):
-	$(MAKE) mk_build CFG=$@
+.PHONY: $(mk_TARGETS) mk_enter mk_preconfig
 
-
-mk_build: $(BUILD_DIR)\/
+mk_enter: $(_BUILD_DIR)\/ $(_OBJECTS)
 	@echo done
 
+mk_preconfig:
+	$(MAKE) _BUILD_DIR="$(BUILD_DIR)" _OBJECTS="$(mk_OBJECTS)" mk_enter
+
+$(CONFIGURATIONS):
+	$(MAKE) CFG=$@ mk_preconfig
 
 clean_doc = clear build directory [$(BUILD_DIR)] by removing object files
 clean:
-	@rm -f $(mk_OBJECTS)
-
+	rm -f $(mk_OBJECTS)
 
 #-- internal ...
 
@@ -68,6 +70,9 @@ mk_OUT_EXT_shared = .so
 mk_OUT_EXT_exe    = .exe
 mk_OUT_EXT        = $(mk_OUT_EXT_$(TYPE))
 
-mk_OBJECTS        = $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(SRC_FILES)))
-mk_FILE_FLAGS     = $($(1)_FLAGS.$(CMPL)) $($(1)_FLAGS.$(CFG)) $($(1)_FLAGS.$(ARCH)) $($(1)_FLAGS.$(TYPE))
+mk_SOURCE_FILES   = $(filter-out $(IGNORE_FILES),$(SOURCE_FILES))
+mk_OBJECTS        = $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(mk_SOURCE_FILES)))
+
+mk_FILE_CLASSES   = CMPL TYPE ARCH CFG
+mk_FLAGS_OF       = $(foreach p,$(sort $(mk_FILE_CLASSES)),$($(1).$($(p))))
 

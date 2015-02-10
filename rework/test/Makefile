@@ -1,8 +1,10 @@
 
-SRC_FILES = testinger.for
+#SOURCE_FILES = testinger.for
+#IGNORE_FILES = $(wildcard *.for)
+TARGET_doc = Some project for\\n testing make files
 
-testinger_FLAGS.debug   = -DDEBUG=1
-testinger_FLAGS.release = -DRELEASE=1
+testinger.debug   = $(fc_D)DEBUG=1 $(fc_pic)
+testinger.release = $(fc_D)RELEASE=1
 
 
 MAKEIT_DIR = ../
