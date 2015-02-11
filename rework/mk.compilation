@@ -1,7 +1,6 @@
 
-include $(MAKEIT_DIR)/rules.base
-include $(MAKEIT_DIR)/rules.dir
-include $(MAKEIT_DIR)/rules.log
+include $(MAKEIT_DIR)/mk.base
+include $(MAKEIT_DIR)/mk.log
 
 mk_PARAMETERS     += CMPL TYPE ARCH CFG TAG BUILD_DIR OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE
 mk_TARGETS        += clean $(CONFIGURATIONS)
@@ -48,20 +47,22 @@ SOURCE_FILES       ?= $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
 
 #-- targets ...
 
-.PHONY: $(mk_TARGETS) mk_enter mk_preconfig
+.PHONY:   $(mk_TARGETS) mk_enter mk_preconfig
+.DEFAULT: mk_enter
 
 mk_enter: $(_BUILD_DIR)\/ $(_OBJECTS)
+	$(mk_LINK)
 	@echo done
 
 mk_preconfig:
-	$(MAKE) _BUILD_DIR="$(BUILD_DIR)" _OBJECTS="$(mk_OBJECTS)" mk_enter
+	@$(MAKE) _BUILD_DIR="$(BUILD_DIR)" _OBJECTS="$(mk_OBJECTS)" mk_enter
 
 $(CONFIGURATIONS):
-	$(MAKE) CFG=$@ mk_preconfig
+	@$(MAKE) CFG=$@ mk_preconfig
 
 clean_doc = clear build directory [$(BUILD_DIR)] by removing object files
 clean:
-	rm -f $(mk_OBJECTS)
+	@rm -f $(mk_OBJECTS)
 
 #-- internal ...
 
@@ -70,9 +71,11 @@ mk_OUT_EXT_shared = .so
 mk_OUT_EXT_exe    = .exe
 mk_OUT_EXT        = $(mk_OUT_EXT_$(TYPE))
 
-mk_SOURCE_FILES   = $(filter-out $(IGNORE_FILES),$(SOURCE_FILES))
-mk_OBJECTS        = $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(mk_SOURCE_FILES)))
+mk_BUILD_CLASSES  = CMPL TYPE ARCH CFG
+mk_CLASSES_OF     = $(foreach c,$(sort $(mk_BUILD_CLASSES)),$($(1).$($(c))))
 
-mk_FILE_CLASSES   = CMPL TYPE ARCH CFG
-mk_FLAGS_OF       = $(foreach p,$(sort $(mk_FILE_CLASSES)),$($(1).$($(p))))
+mk_CLASS_FILES    = $(filter-out $(IGNORE_FILES.$($(1))),$(SOURCE_FILES.$($(1))))
+__class_files__   = $(foreach c,$(sort $(mk_BUILD_CLASSES)),$(call mk_CLASS_FILES,$(c)))
+__source_files__  = $(filter-out $(IGNORE_FILES),$(SOURCE_FILES) $(__class_files__))
+mk_OBJECTS        = $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(__source_files__)))
 

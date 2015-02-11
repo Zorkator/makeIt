@@ -1,0 +1,42 @@
+
+mk_PARAMETERS += 
+mk_TARGETS    += help echo.*
+
+#-- public definitions --
+
+mk_lower   = $(shell echo $(1) | tr A-Z a-z)
+mk_upper   = $(shell echo $(1) | tr a-z A-Z)
+mk_csv     = $(subst $(mk_space),$(mk_comma),$(1))
+mk_ssv     = $(subst $(mk_comma),$(mk_space),$(1))
+mk_null   :=
+mk_space  := $(mk_null) #
+mk_comma  := ,
+
+#-- targets ...
+
+help_doc = print overview over supported parameters and targets
+help:
+	@echo -e \ $(TARGET_doc)\\n
+	@echo == SUPPORTED TARGETS ==
+	@echo -e \ $(__TGT_TAB)
+	@echo == SUPPORTED PARAMETERS ==
+	@echo -e \ $(__VAR_TAB)
+
+
+echo.*_doc = echo make variable, e.g. make echo.CFG
+echo.%:
+	@echo $* = $($*)
+
+
+%/:
+	@mkdir -p $@
+
+
+#-- private definitions ...
+
+__VAR_DOC = "$(shell printf '%-15s %s  [%s]\\n' '$(1)' '$($(1)_doc)' '$($(1))')"
+__VAR_TAB = $(foreach v,$(sort $(mk_PARAMETERS)),$(call __VAR_DOC,$(v)))
+
+__TGT_DOC = "$(shell printf '%-10s %s\\n' '$(1)' '$($(1)_doc)')"
+__TGT_TAB = $(foreach t,$(sort $(mk_TARGETS)),$(call __TGT_DOC,$(t)))
+
