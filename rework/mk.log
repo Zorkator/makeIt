@@ -1,5 +1,7 @@
 
 mk_PARAMETERS += LOG LOG_FILE
+cmd_LOG        = $(__log)
+
 
 #-- parameters ...
 
@@ -11,7 +13,7 @@ LOG_FILE_doc ?= file for logging build messages. default: <BUILD_DIR>/_build.log
 
 #-- definitions for build step logging ...
 
-mk_LOG_on     = 2>&1 | tee -a $(LOG_FILE)
-mk_LOG_off    =
-cmd_LOG       = $(mk_LOG_$(LOG))
+__log_on  = 2>&1 | tee -a $(LOG_FILE)
+__log_off =
+__log     = $(__log_$(LOG))
 

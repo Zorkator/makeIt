@@ -58,7 +58,7 @@ OUT_FILE_doc       ?= path and file name of the final result
 
 .PHONY: $(mk_TARGETS)
 
-__rule_tmpl = "$(BUILD_DIR)/%.o: <type>\\n	@echo \$(mk_DOLLAR)@\\n"
+__rule_tmpl = "$(BUILD_DIR)/%.o: <type>\\n	@$1\\n"
 _sdirs = $(sort $(dir $(__source_files)))
 _tp    = $(foreach t,$(mk_FILE_TYPES),$(foreach d,$(_sdirs),$(d)%.$t))
 _xp    = $(foreach d,$(_sdirs),$(d)%.$t)
@@ -66,9 +66,9 @@ _xp    = $(foreach d,$(_sdirs),$(d)%.$t)
 build:
 	#-- write auto-depends
 	@$(shell echo $(OUT_FILE): $(sort $(mk_OUTPUT_DIRS:%=%\\/)) $(mk_OBJECTS) > $(__deps))
-	@$(shell echo "	#>> linking ..."                                                       >> $(__deps))
-	@$(shell echo "	$(cmd_LINK)"                                                           >> $(__deps))
-	@$(shell echo "	#>> success"                                                           >> $(__deps))
+	@$(shell echo "	#>> linking ..."                                          >> $(__deps))
+	@$(shell echo "	\$(mk_DOLLAR)(cmd_LINK)"                                  >> $(__deps))
+	@$(shell echo "	#>> success"                                              >> $(__deps))
 	@$(foreach f,$(__source_files),$(shell echo $(call mk_object_of,$f): $f              >> $(__deps)))
 	@$(MAKE) $(OUT_FILE)
 	#@rm $(__deps)
@@ -76,6 +76,10 @@ build:
 
 #$(__sub_dirs):
 #	@cd $@ && $(MAKE) OUT_NAME=$@ OUT_DIR=../$(OUT_DIR)
+
+__eval = $(call $(firstword $1),$(wordlist 2,99,$1))
+eval.%:
+	@echo $(call __eval,$(call mk_ssv,$*))
 
 
 $(CONFIGURATIONS):
@@ -102,6 +106,20 @@ mk_OBJECTS        = $(call mk_object_of,$(__source_files))
 
 #__sub_dirs           = $(SUB_DIRS) $(call mk_evalClasses,$(SUB_DIRS))
 #__sub_libraries      = $(foreach s,$(__sub_dirs),$(s).$(TAG))
+
+#__src_file_dirs      = $(foreach d,$(sort $(dir $(__filtered_src_files))),$d%) ./%
+#__src_file_patterns  = $(foreach t,$(mk_FILE_TYPES),.$t)
+#__rule_patterns      = $(shell echo {$(call mk_csv,$(__src_file_dirs))}{$(call mk_csv,$(__src_file_patterns))})
+#__append_rule_to     = $(shell echo -e "$(BUILD_DIR)/%.o: $(1)\\n\\t@echo \$(mk_DOLLAR)@ \$(mk_DOLLAR)<" >> $(2))
+#__append_rules       = $(foreach p,$(__rule_patterns),$(call __append_rule_to,$p,$(1)))
+#
+##__rule_tab           = $(foreach p,$(__rule_patterns),"$(BUILD_DIR)/%.o: $p\\n\\t@echo \$(mk_DOLLAR)@ \$(mk_DOLLAR)<\\n")
+##__rule               = $(shell echo -e $(__rule_tab) > test.out)
+##__mk_rules           = $(call __append_rules,test.out)
+#
+##__rule_f              = $(call __rule_pattern_of,f)
+#__rule_pattern_of     = $(shell echo {$(call mk_csv,$(__src_file_dirs))}.$(1))
+#__rules               = $(sort $(foreach t,$(mk_FILE_TYPES),$(call __rule_pattern_of,$t)))
 
 sinclude $(__deps)
 include $(MAKEIT_DIR)/mk.base

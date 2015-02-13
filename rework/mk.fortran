@@ -5,8 +5,9 @@ mk_FILE_TYPES     += f95 f90 for f
 mk_COMPILERS      += gfortran ifort
 mk_ARCHITECTURES  += 32 64
 mk_PARAMETERS     += MOD_DIR
+mk_TARGETS        += fpp.*
 mk_OUTPUT_DIRS    += $(MOD_DIR)
-cmd_LINK          ?= $(fc_link)
+cmd_LINK          ?= $(fc_cmd_link)
 
 #-- user parameters --
 
@@ -15,93 +16,119 @@ MOD_DIR_doc ?= output directory for putting generated module files
 
 #-- exposed compiler switches --
 
-fc      = $(__fc_$(CMPL))#       < compiler call
-fc_c    = $(__fc_c_$(CMPL))#     < compile only (no linking)
-fc_g    = $(__fc_g_$(CMPL))#     < compile with debug info
-fc_O0   = $(__fc_O0_$(CMPL))#    < optimization level O0
-fc_O1   = $(__fc_O1_$(CMPL))#    < optimization level O1
-fc_O2   = $(__fc_O2_$(CMPL))#    < optimization level O2
-fc_O3   = $(__fc_O3_$(CMPL))#    < optimization level O3
-fc_o    = $(__fc_o_$(CMPL))#     < output file
-fc_m    = $(__fc_m_$(CMPL))#     < architecture
-fc_fpp  = $(__fc_fpp_$(CMPL))#   < enable preprocessor
-fc_D    = $(__fc_D_$(CMPL))#     < define preprocessor symbol
-fc_I    = $(__fc_I_$(CMPL))#     < include directory
-fc_L    = $(__fc_L_$(CMPL))#     < link directory
-fc_l    = $(__fc_l_$(CMPL))#     < link libraray
-fc_Mod  = $(__fc_Mod_$(CMPL))#   < directory for module output
-fc_pic  = $(__fc_pic_$(CMPL))#   < generate position independent code (pic) for shared libraries
-fc_link = $(__fc_link.$(TYPE))#  < proposed linker command
+fc          = $(__fc_$(CMPL))#          < compiler call
+fc_c        = $(__fc_c_$(CMPL))#        < compile only (no linking)
+fc_g        = $(__fc_g_$(CMPL))#        < compile with debug info
+fc_O0       = $(__fc_O0_$(CMPL))#       < optimization level O0
+fc_O1       = $(__fc_O1_$(CMPL))#       < optimization level O1
+fc_O2       = $(__fc_O2_$(CMPL))#       < optimization level O2
+fc_O3       = $(__fc_O3_$(CMPL))#       < optimization level O3
+fc_o        = $(__fc_o_$(CMPL))#        < output file
+fc_m        = $(__fc_m_$(CMPL))#        < architecture
+fc_fpp      = $(__fc_fpp_$(CMPL))#      < enable preprocessor
+fc_fpp77    = $(__fc_fpp77_$(CMPL))#    < enable preprocessor for fixed format source
+fc_E        = $(__fc_E_$(CMPL))#        < preprocess only - implies fc_fpp
+fc_D        = $(__fc_D_$(CMPL))#        < define preprocessor symbol
+fc_I        = $(__fc_I_$(CMPL))#        < include directory
+fc_L        = $(__fc_L_$(CMPL))#        < link directory
+fc_l        = $(__fc_l_$(CMPL))#        < link libraray
+fc_Mod      = $(__fc_Mod_$(CMPL))#      < directory for module output
+fc_pic      = $(__fc_pic_$(CMPL))#      < generate position independent code (pic) for shared libraries
+fc_cmd_link = $(__fc_cmd_link.$(TYPE))# < proposed linker command
+
+#-- targets --
+
+fpp.*_doc = preprocess file to stdout
+fpp.%:
+	$(__fc_fpp__) $*
 
 
 #-- define compiler switches --
 
-__fc_gfortran     := gfortran
-__fc_c_gfortran   := -c
-__fc_g_gfortran   := -ggdb
-__fc_O0_gfortran  := -O0
-__fc_O1_gfortran  := -O1
-__fc_O2_gfortran  := -O2
-__fc_O3_gfortran  := -O3
-__fc_o_gfortran   := -o
-__fc_m_gfortran   := -m
-__fc_fpp_gfortran := -cpp -ffree-line-length-none
-__fc_D_gfortran   := -D
-__fc_I_gfortran   := -I
-__fc_L_gfortran   := -L
-__fc_l_gfortran   := -l
-__fc_Mod_gfortran := -J
-__fc_pic_gfortran := -shared -fpic
-
-__fc_ifort        := ifort
-__fc_c_ifort      := -c
-__fc_g_ifort      := -g
-__fc_O0_ifort     := -O0
-__fc_O1_ifort     := -O1
-__fc_O2_ifort     := -O2
-__fc_O3_ifort     := -O3
-__fc_o_ifort      := -o
-__fc_m_ifort      := -m
-__fc_fpp_ifort    := -fpp -allow nofpp-comments
-__fc_D_ifort      := -D
-__fc_I_ifort      := -I
-__fc_L_ifort      := -L
-__fc_l_ifort      := -l
-__fc_Mod_ifort    := -module
-__fc_pic_ifort    := -shared -fpic
+__fc_gfortran       := gfortran
+__fc_c_gfortran     := -c
+__fc_g_gfortran     := -ggdb
+__fc_O0_gfortran    := -O0
+__fc_O1_gfortran    := -O1
+__fc_O2_gfortran    := -O2
+__fc_O3_gfortran    := -O3
+__fc_o_gfortran     := -o
+__fc_m_gfortran     := -m
+__fc_fpp_gfortran   := -cpp -ffree-line-length-none
+__fc_fpp77_gfortran := -x f77-cpp-input -ffree-line-length-none
+__fc_E_gfortran     := -E $(__fc_fpp_gfortran)
+__fc_D_gfortran     := -D
+__fc_I_gfortran     := -I
+__fc_L_gfortran     := -L
+__fc_l_gfortran     := -l
+__fc_Mod_gfortran   := -J
+__fc_pic_gfortran   := -shared -fpic
+                    
+__fc_ifort          := ifort
+__fc_c_ifort        := -c
+__fc_g_ifort        := -g
+__fc_O0_ifort       := -O0
+__fc_O1_ifort       := -O1
+__fc_O2_ifort       := -O2
+__fc_O3_ifort       := -O3
+__fc_o_ifort        := -o
+__fc_m_ifort        := -m
+__fc_fpp_ifort      := -fpp -allow nofpp-comments
+__fc_fpp77_ifort    := $(__fc_fpp_ifort)
+__fc_E_ifort        := -E $(__fc_fpp_ifort)
+__fc_D_ifort        := -D
+__fc_I_ifort        := -I
+__fc_L_ifort        := -L
+__fc_l_ifort        := -l
+__fc_Mod_ifort      := -module
+__fc_pic_ifort      := -shared -fpic
 
 #-- derive private flaglists --
 
-__fc_pp_defines__   = $(FC_PP_DEFINES) $(call mk_tagged,FC_PP_DEFINES)
-__fc_pp_defines     = $(__fc_pp_defines__:%=$(fc_D)%)
+__fc_pp_defines__    = $(FC_PP_DEFINES) $(call mk_tagged,FC_PP_DEFINES)
+__fc_pp_defines      = $(__fc_pp_defines__:%=$(fc_D)%)
 
-__fc_include_dirs__ = $(MOD_DIR) $(FC_INCLUDE_DIRS) $(call mk_tagged,FC_INCLUDE_DIRS)
-__fc_include_dirs   = $(__fc_include_dirs__:%=$(fc_I)%)
+__fc_include_dirs__  = $(MOD_DIR) $(FC_INCLUDE_DIRS) $(call mk_tagged,FC_INCLUDE_DIRS)
+__fc_include_dirs    = $(__fc_include_dirs__:%=$(fc_I)%)
 
-__fc_library_dirs__ = $(OUT_DIR) $(FC_LIBRARY_DIRS) $(call mk_tagged,FC_LIBRARY_DIRS)
-__fc_library_dirs   = $(__fc_library_dirs__:%=$(fc_L)%)
+__fc_flags__         = $(FC_FLAGS) $(call mk_tagged,FC_FLAGS)
+__fc_flags.shared    = $(fc_pic)
+__fc_flags           = $(fc_m)$(ARCH) $(__fc_flags.$(TYPE)) $(__fc_flags__)
 
-__fc_libraries__    = $(mk_SUB_LIBS) $(FC_LIBRARIES) $(call mk_tagged,FC_LIBRARIES)
-__fc_libraries      = $(__fc_libraries__:%=$(fc_l)%)
+__fc_cflags__        = $(fc_Mod) $(MOD_DIR) $(FC_CFLAGS) $(call mk_tagged,FC_CFLAGS)
+__fc_cflags          = $(__fc_cflags__) $(__fc_flags) $(__fc_include_dirs) $(__fc_pp_defines)
 
-__fc_flags__        = $(FC_FLAGS) $(call mk_tagged,FC_FLAGS)
-__fc_flags.shared   = $(fc_pic)
-__fc_flags          = $(fc_m)$(ARCH) $(__fc_flags.$(TYPE)) $(__fc_flags__)
+__fc_fpp__           = $(fc) $(fc_E) $(__fc_cflags)
 
-__fc_cflags__       = $(fc_Mod) $(MOD_DIR) $(FC_CFLAGS) $(call mk_tagged,FC_CFLAGS)
-__fc_cflags         = $(__fc_cflags__) $(__fc_flags) $(__fc_include_dirs) $(__fc_pp_defines)
+__fc_library_dirs__  = $(OUT_DIR) $(FC_LIBRARY_DIRS) $(call mk_tagged,FC_LIBRARY_DIRS)
+__fc_library_dirs    = $(__fc_library_dirs__:%=$(fc_L)%)
 
-__fc_lflags__       = $(FC_LFLAGS) $(call mk_tagged,FC_LFLAGS)
-__fc_lflags         = $(__fc_lflags__) $(__fc_flags) $(__fc_library_dirs)
+__fc_libraries__     = $(mk_SUB_LIBS) $(FC_LIBRARIES) $(call mk_tagged,FC_LIBRARIES)
+__fc_libraries       = $(__fc_libraries__:%=$(fc_l)%)
 
-__fc_link_input__   = $(FC_LINK_INPUT) $(call mk_tagged,FC_LINK_INPUT)
-__fc_link_input     = $(sort $(mk_OBJECTS)) $(__fc_link_input__) $(__fc_libraries)
+__fc_lflags__        = $(FC_LFLAGS) $(call mk_tagged,FC_LFLAGS)
+__fc_lflags          = $(__fc_lflags__) $(__fc_flags) $(__fc_library_dirs)
 
-__fc_link.exe       = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
-__fc_link.shared    = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
-__fc_link.static    = ar rsv $(OUT_FILE) $(__fc_link_input)
+__fc_link_input__    = $(FC_LINK_INPUT) $(call mk_tagged,FC_LINK_INPUT)
+__fc_link_input      = $(sort $(mk_OBJECTS)) $(__fc_link_input__) $(__fc_libraries)
 
-__cpl = "$(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)"
+__fc_cmd_compile     = $(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
+__fc_cmd_compile.f   = $(value __fc_cmd_compile)
+__fc_cmd_compile.f90 = $(value __fc_cmd_compile)
+__fc_cmd_compile.f95 = $(value __fc_cmd_compile)
+__fc_cmd_compile.for = $(value __fc_cmd_compile)
+
+__fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
+__fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
+__fc_cmd_link.static = ar rsv $(OUT_FILE) $(__fc_link_input)
+
+
+
+
+_x = $(shell echo '$(__fc_cmd_compile.f)' >> bla.out)
+_y = $(shell echo '$(__fc_cmd_compile.$1)' >> bla.out)
+_z = $(foreach t,$(mk_FILE_TYPES),$(shell echo '$(__fc_cmd_compile.$t)' >> bla.out))
+
 
 #-- compilation rules --
 
