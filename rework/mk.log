@@ -13,5 +13,5 @@ LOG_FILE_doc ?= file for logging build messages. default: <BUILD_DIR>/_build.log
 
 mk_LOG_on     = 2>&1 | tee -a $(LOG_FILE)
 mk_LOG_off    =
-mk_LOG        = $(mk_LOG_$(LOG))
+cmd_LOG       = $(mk_LOG_$(LOG))
 

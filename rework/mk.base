@@ -7,6 +7,8 @@ mk_TARGETS    += help echo.*
 mk_NULL       :=
 mk_SPACE      := $(mk_NULL) #
 mk_COMMA      := ,
+mk_DOLLAR     := $$
+mk_ANY        := %
 
 mk_lower       = $(shell echo $(1) | tr A-Z a-z)
 mk_upper       = $(shell echo $(1) | tr a-z A-Z)

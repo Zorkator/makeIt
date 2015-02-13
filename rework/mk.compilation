@@ -1,14 +1,20 @@
 
 #-- set/modify public definitions --
 
-mk_PARAMETERS     += CMPL TYPE ARCH CFG TAG BUILD_DIR OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE
-mk_BUILD_CLASSES  += CMPL TYPE ARCH CFG
-mk_TARGETS        += clean $(CONFIGURATIONS)
-mk_FILE_TYPES     += 
-mk_TYPES          += exe static shared
-mk_OUTPUT_DIRS    += $(BUILD_DIR)
+mk_PARAMETERS   += CMPL TYPE ARCH CFG TAG BUILD_DIR OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE
+mk_TAG_CLASSES  += CMPL TYPE ARCH CFG mk_ANY
+mk_TARGETS      += clean $(CONFIGURATIONS) #$(__sub_dirs)
+mk_FILE_TYPES   += 
+mk_TYPES        += exe static shared
+mk_OUTPUT_DIRS  += $(BUILD_DIR)
+mk_SUB_LIBS     += $(__sub_libraries)
 
-mk_evalClasses     = $(foreach c,$(sort $(mk_BUILD_CLASSES)),$($(1).$($(c))))
+mk_tagged        = $(foreach c,$(sort $(mk_TAG_CLASSES)),$($(1).$($(c))))
+mk_tagged_file   = $(call mk_tagged,$(notdir $(1)))
+mk_object_of     = $(patsubst %,$(BUILD_DIR)/%.o,$(notdir $(basename $(1))))
+
+any_source       = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
+any_source_in    = $(foreach t,$(mk_FILE_TYPES),$(wildcard $(1)/*.$(t)))
 
 
 #-- user parameters --
@@ -29,11 +35,11 @@ ARCH_doc           ?= architecture id: {$(call mk_csv,$(mk_ARCHITECTURES))}
 CFG                ?= $(firstword $(CONFIGURATIONS))
 CFG_doc            ?= name of build configuration: {$(call mk_csv,$(CONFIGURATIONS))}
 
-TAG                ?= $(CMPL).$(TYPE).$(ARCH).$(CFG)
-TAG_doc            ?= string for tagging build directory. default: <CMPL>.<TYPE>.<ARCH>.<CFG>
+TAG                ?= $(CMPL).$(ARCH).$(CFG)
+TAG_doc            ?= string for tagging build directory. default: <CMPL>.<ARCH>.<CFG>
 
-BUILD_DIR          ?= $(TAG)
-BUILD_DIR_doc      ?= working directory for building object files. default: <TAG>
+BUILD_DIR          ?= $(TAG).$(TYPE)
+BUILD_DIR_doc      ?= working directory for building object files. default: <TAG>.<TYPE>
 
 OUT_DIR            ?= $(BUILD_DIR)
 OUT_DIR_doc        ?= output directory for putting the output file(s)
@@ -47,22 +53,29 @@ OUT_FILE_NAME_doc  ?= the file name of the final result
 OUT_FILE           ?= $(OUT_DIR)/$(OUT_FILE_NAME)
 OUT_FILE_doc       ?= path and file name of the final result
 
-SOURCE_FILES       ?= $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
-
 
 #-- targets --
 
 .PHONY: $(mk_TARGETS)
 
+__rule_tmpl = "$(BUILD_DIR)/%.o: <type>\\n	@echo \$(mk_DOLLAR)@\\n"
+_sdirs = $(sort $(dir $(__source_files)))
+_tp    = $(foreach t,$(mk_FILE_TYPES),$(foreach d,$(_sdirs),$(d)%.$t))
+_xp    = $(foreach d,$(_sdirs),$(d)%.$t)
+
 build:
 	#-- write auto-depends
-	@$(shell echo $(OUT_FILE): $(mk_OUTPUT_DIRS:%=%\\/) $(mk_OBJECTS) > $(__deps))
-	@$(shell echo "	#>> linking ..."                                 >> $(__deps))
-	@$(shell echo "	$(cmd_LINK)"                                     >> $(__deps))
-	@$(shell echo "	#>> success"                                     >> $(__deps))
-	@$(foreach f,$(__filtered_src_files),$(shell echo $(call __obj_of,$f): $f >> $(__deps)))
+	@$(shell echo $(OUT_FILE): $(sort $(mk_OUTPUT_DIRS:%=%\\/)) $(mk_OBJECTS) > $(__deps))
+	@$(shell echo "	#>> linking ..."                                                       >> $(__deps))
+	@$(shell echo "	$(cmd_LINK)"                                                           >> $(__deps))
+	@$(shell echo "	#>> success"                                                           >> $(__deps))
+	@$(foreach f,$(__source_files),$(shell echo $(call mk_object_of,$f): $f              >> $(__deps)))
 	@$(MAKE) $(OUT_FILE)
-	@rm $(__deps)
+	#@rm $(__deps)
+
+
+#$(__sub_dirs):
+#	@cd $@ && $(MAKE) OUT_NAME=$@ OUT_DIR=../$(OUT_DIR)
 
 
 $(CONFIGURATIONS):
@@ -70,23 +83,25 @@ $(CONFIGURATIONS):
 
 clean_doc = clear build directory [$(BUILD_DIR)] by removing object files
 clean:
-	@rm -f $(mk_OBJECTS)
+	@rm -f $(mk_OBJECTS) $(LOG_FILE)
+	#$(foreach d,$(__sub_dirs),$(shell cd $d && $(MAKE) clean))
 
 
 #-- set/derive private variables/lists --
 
 __deps := .mk.deps
 
-__out_file_name_static = lib$(OUT_NAME).$(CMPL).$(ARCH).$(CFG).a
-__out_file_name_shared = lib$(OUT_NAME).$(CMPL).$(ARCH).$(CFG).so
-__out_file_name_exe    = $(OUT_NAME).$(CMPL).$(ARCH).$(CFG)
+__out_file_name_static = lib$(OUT_NAME).$(TAG).a
+__out_file_name_shared = lib$(OUT_NAME).$(TAG).so
+__out_file_name_exe    = $(OUT_NAME).$(TAG)
 __out_file_name        = $(__out_file_name_$(TYPE))
 
-__filter_src_files   = $(filter-out $(IGNORE_FILES.$($(1))),$(SOURCE_FILES.$($(1))))
-__classed_src_files  = $(foreach c,$(sort $(mk_BUILD_CLASSES)),$(call __filter_src_files,$(c)))
-__filtered_src_files = $(filter-out $(IGNORE_FILES),$(SOURCE_FILES) $(__classed_src_files))
-__obj_of             = $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(1)))
-mk_OBJECTS           = $(call __obj_of,$(__filtered_src_files))
+__ignored_files   = $(IGNORE_FILES) $(call mk_tagged,IGNORE_FILES)
+__source_files    = $(filter-out $(__ignored_files),$(SOURCE_FILES) $(call mk_tagged,SOURCE_FILES))
+mk_OBJECTS        = $(call mk_object_of,$(__source_files))
+
+#__sub_dirs           = $(SUB_DIRS) $(call mk_evalClasses,$(SUB_DIRS))
+#__sub_libraries      = $(foreach s,$(__sub_dirs),$(s).$(TAG))
 
 sinclude $(__deps)
 include $(MAKEIT_DIR)/mk.base

@@ -72,47 +72,48 @@ __fc_pic_ifort    := -shared -fpic
 
 #-- derive private flaglists --
 
-__fc_pp_defines__   = $(FC_PP_DEFINES) $(call mk_evalClasses,FC_PP_DEFINES)
+__fc_pp_defines__   = $(FC_PP_DEFINES) $(call mk_tagged,FC_PP_DEFINES)
 __fc_pp_defines     = $(__fc_pp_defines__:%=$(fc_D)%)
 
-__fc_include_dirs__ = $(MOD_DIR) $(FC_INCLUDE_DIRS) $(call mk_evalClasses,FC_INCLUDE_DIRS)
+__fc_include_dirs__ = $(MOD_DIR) $(FC_INCLUDE_DIRS) $(call mk_tagged,FC_INCLUDE_DIRS)
 __fc_include_dirs   = $(__fc_include_dirs__:%=$(fc_I)%)
 
-__fc_library_dirs__ = $(FC_LIBRARY_DIRS) $(call mk_evalClasses,FC_LIBRARY_DIRS)
+__fc_library_dirs__ = $(OUT_DIR) $(FC_LIBRARY_DIRS) $(call mk_tagged,FC_LIBRARY_DIRS)
 __fc_library_dirs   = $(__fc_library_dirs__:%=$(fc_L)%)
 
-__fc_libraries__    = $(FC_LIBRARIES) $(call mk_evalClasses,FC_LIBRARIES)
+__fc_libraries__    = $(mk_SUB_LIBS) $(FC_LIBRARIES) $(call mk_tagged,FC_LIBRARIES)
 __fc_libraries      = $(__fc_libraries__:%=$(fc_l)%)
 
-__fc_flags__        = $(FC_FLAGS) $(call mk_evalClasses,FC_FLAGS)
+__fc_flags__        = $(FC_FLAGS) $(call mk_tagged,FC_FLAGS)
 __fc_flags.shared   = $(fc_pic)
 __fc_flags          = $(fc_m)$(ARCH) $(__fc_flags.$(TYPE)) $(__fc_flags__)
 
-__fc_cflags__       = $(fc_Mod) $(MOD_DIR) $(FC_CFLAGS) $(call mk_evalClasses,FC_CFLAGS)
+__fc_cflags__       = $(fc_Mod) $(MOD_DIR) $(FC_CFLAGS) $(call mk_tagged,FC_CFLAGS)
 __fc_cflags         = $(__fc_cflags__) $(__fc_flags) $(__fc_include_dirs) $(__fc_pp_defines)
 
-__fc_lflags__       = $(FC_LFLAGS) $(call mk_evalClasses,FC_LFLAGS)
+__fc_lflags__       = $(FC_LFLAGS) $(call mk_tagged,FC_LFLAGS)
 __fc_lflags         = $(__fc_lflags__) $(__fc_flags) $(__fc_library_dirs)
 
-__fc_link_input__   = $(FC_LINK_INPUT) $(call mk_evalClasses,FC_LINK_INPUT)
+__fc_link_input__   = $(FC_LINK_INPUT) $(call mk_tagged,FC_LINK_INPUT)
 __fc_link_input     = $(sort $(mk_OBJECTS)) $(__fc_link_input__) $(__fc_libraries)
 
 __fc_link.exe       = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
 __fc_link.shared    = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
-__fc_link.static    = ar rv $(OUT_FILE) $(__fc_link_input)
+__fc_link.static    = ar rsv $(OUT_FILE) $(__fc_link_input)
 
+__cpl = "$(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)"
 
 #-- compilation rules --
 
-$(BUILD_DIR)/%.o: %.f95
-	$(fc) $(fc_c) $(__fc_cflags) $(call mk_evalClasses,$(notdir $*)) $< $(fc_o) $@ $(cmd_LOG)
+$(BUILD_DIR)/%.o: ./%.f95
+	$(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
 
-$(BUILD_DIR)/%.o: %.f90
-	$(fc) $(fc_c) $(__fc_cflags) $(call mk_evalClasses,$(notdir $*)) $< $(fc_o) $@ $(cmd_LOG)
+$(BUILD_DIR)/%.o: ./%.f90
+	$(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
 
-$(BUILD_DIR)/%.o: %.for
-	$(fc) $(fc_c) $(__fc_cflags) $(call mk_evalClasses,$(notdir $*)) $< $(fc_o) $@ $(cmd_LOG)
+$(BUILD_DIR)/%.o: ./%.for
+	$(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
 
-$(BUILD_DIR)/%.o: %.f
-	$(fc) $(fc_c) $(__fc_cflags) $(call mk_evalClasses,$(notdir $*)) $< $(fc_o) $@ $(cmd_LOG)
+$(BUILD_DIR)/%.o: ./%.f
+	$(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
 
