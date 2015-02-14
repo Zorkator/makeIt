@@ -2,6 +2,7 @@
 #-- set/modify public definitions --
 
 mk_PARAMETERS   += FC FC_MOD_DIR FC_PP_DEFINES FC_INCLUDE_DIRS FC_FLAGS FC_CFLAGS FC_LFLAGS FC_LIBRARY_DIRS FC_LIBRARIES FC_LINK_INPUT
+mk_TAG_CLASSES  += FC
 mk_TARGETS      += fpp.*
 mk_FILE_TYPES   += f95 f90 for f
 mk_OUTPUT_DIRS  += $(FC_MOD_DIR)
@@ -34,7 +35,7 @@ FC_LIBRARY_DIRS     ?=
 FC_LIBRARY_DIRS_doc ?= list of library directories
 FC_LINK_INPUT       ?=
 FC_LINK_INPUT_doc   ?= list of other link input files 
-FC_MOD_DIR          ?= $(OUT_DIR)
+FC_MOD_DIR          ?= $(if $(filter exe,$(BUILT_TYPE)),$(BUILD_DIR),$(OUT_DIR))
 FC_MOD_DIR_doc      ?= output directory for generated fortran module files
 FC_PP_DEFINES       ?=
 FC_PP_DEFINES_doc   ?= list of fortran preprocessor defines
@@ -140,5 +141,5 @@ __fc_cmd_compile     = $(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $<
 
 __fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
 __fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
-__fc_cmd_link.static = ar rsv $(OUT_FILE) $(__fc_link_input)
+__fc_cmd_link.static = ar rv $(OUT_FILE) $(__fc_link_input) && ranlib -t $(OUT_FILE)
 
