@@ -15,6 +15,7 @@ FC_CFLAGS.debug   = $(fc_g)
 FC_CFLAGS.release = $(fc_O3)
 
 func1.shared = -DBLA=1
+func2.% = -DBLUB=1
 
 
 FC_LIBRARY_DIRS   = 
@@ -25,7 +26,5 @@ FC_LINK_INPUT     =
 MAKEIT_DIR = ../
 include $(MAKEIT_DIR)/mk.compilation
 include $(MAKEIT_DIR)/mk.fortran
-
-$(BUILD_DIR)/%.o: sub/%.f90
-	$(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
+sinclude $(mk_DEPS)
 

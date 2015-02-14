@@ -7,7 +7,13 @@ mk_ARCHITECTURES  += 32 64
 mk_PARAMETERS     += MOD_DIR
 mk_TARGETS        += fpp.*
 mk_OUTPUT_DIRS    += $(MOD_DIR)
-cmd_LINK          ?= $(fc_cmd_link)
+
+cmd_COMPILE.f      = $(__fc_cmd_compile)
+cmd_COMPILE.f90    = $(__fc_cmd_compile)
+cmd_COMPILE.f95    = $(__fc_cmd_compile)
+cmd_COMPILE.for    = $(__fc_cmd_compile)
+cmd_LINK.fc        = $(__fc_cmd_link.$(TYPE))
+cmd_LINK          ?= $(cmd_LINK.fc)#  < proposed linker command
 
 #-- user parameters --
 
@@ -34,7 +40,6 @@ fc_L        = $(__fc_L_$(CMPL))#        < link directory
 fc_l        = $(__fc_l_$(CMPL))#        < link libraray
 fc_Mod      = $(__fc_Mod_$(CMPL))#      < directory for module output
 fc_pic      = $(__fc_pic_$(CMPL))#      < generate position independent code (pic) for shared libraries
-fc_cmd_link = $(__fc_cmd_link.$(TYPE))# < proposed linker command
 
 #-- targets --
 
@@ -113,34 +118,8 @@ __fc_link_input__    = $(FC_LINK_INPUT) $(call mk_tagged,FC_LINK_INPUT)
 __fc_link_input      = $(sort $(mk_OBJECTS)) $(__fc_link_input__) $(__fc_libraries)
 
 __fc_cmd_compile     = $(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
-__fc_cmd_compile.f   = $(value __fc_cmd_compile)
-__fc_cmd_compile.f90 = $(value __fc_cmd_compile)
-__fc_cmd_compile.f95 = $(value __fc_cmd_compile)
-__fc_cmd_compile.for = $(value __fc_cmd_compile)
 
 __fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
 __fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
 __fc_cmd_link.static = ar rsv $(OUT_FILE) $(__fc_link_input)
-
-
-
-
-_x = $(shell echo '$(__fc_cmd_compile.f)' >> bla.out)
-_y = $(shell echo '$(__fc_cmd_compile.$1)' >> bla.out)
-_z = $(foreach t,$(mk_FILE_TYPES),$(shell echo '$(__fc_cmd_compile.$t)' >> bla.out))
-
-
-#-- compilation rules --
-
-$(BUILD_DIR)/%.o: ./%.f95
-	$(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
-
-$(BUILD_DIR)/%.o: ./%.f90
-	$(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
-
-$(BUILD_DIR)/%.o: ./%.for
-	$(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
-
-$(BUILD_DIR)/%.o: ./%.f
-	$(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
 
