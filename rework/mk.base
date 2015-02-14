@@ -12,8 +12,8 @@ mk_ANY        := %
 
 mk_lower       = $(shell echo $(1) | tr A-Z a-z)
 mk_upper       = $(shell echo $(1) | tr a-z A-Z)
-mk_csv         = $(subst $(mk_SPACE),$(mk_COMMA),$(1))
-mk_ssv         = $(subst $(mk_COMMA),$(mk_SPACE),$(1))
+mk_csv         = $(subst $(mk_SPACE),$(mk_COMMA),$(strip $1))
+mk_ssv         = $(subst $(mk_COMMA),$(mk_SPACE),$(strip $1))
 
 #-- targets --
 
@@ -43,7 +43,7 @@ echo.%:
 
 #-- private definitions --
 
-__var_doc = "$(shell printf '%-15s %s  [%s]\\n' '$(1)' '$($(1)_doc)' '$($(1))')"
+__var_doc = "$(shell printf '%-20s %s  [%s]\\n' '$(1)' '$($(1)_doc)' '$($(1))')"
 __var_tab = $(foreach v,$(sort $(mk_PARAMETERS)),$(call __var_doc,$(v)))
 
 __tgt_doc = "$(shell printf '%-10s %s\\n' '$(1)' '$($(1)_doc)')"

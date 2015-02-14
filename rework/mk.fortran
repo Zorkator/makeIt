@@ -1,45 +1,64 @@
 
 #-- set/modify public definitions --
 
-mk_FILE_TYPES     += f95 f90 for f
-mk_COMPILERS      += gfortran ifort
-mk_ARCHITECTURES  += 32 64
-mk_PARAMETERS     += MOD_DIR
-mk_TARGETS        += fpp.*
-mk_OUTPUT_DIRS    += $(MOD_DIR)
+mk_PARAMETERS   += FC FC_MOD_DIR FC_PP_DEFINES FC_INCLUDE_DIRS FC_FLAGS FC_CFLAGS FC_LFLAGS FC_LIBRARY_DIRS FC_LIBRARIES FC_LINK_INPUT
+mk_TARGETS      += fpp.*
+mk_FILE_TYPES   += f95 f90 for f
+mk_OUTPUT_DIRS  += $(FC_MOD_DIR)
 
-cmd_COMPILE.f      = $(__fc_cmd_compile)
-cmd_COMPILE.f90    = $(__fc_cmd_compile)
-cmd_COMPILE.f95    = $(__fc_cmd_compile)
-cmd_COMPILE.for    = $(__fc_cmd_compile)
-cmd_LINK.fc        = $(__fc_cmd_link.$(TYPE))
-cmd_LINK          ?= $(cmd_LINK.fc)#  < proposed linker command
+mk_FC_list      += gfortran ifort
+mk_ARCH_list    += 32 64
+
+cmd_COMPILE.f    = $(__fc_cmd_compile)
+cmd_COMPILE.f90  = $(__fc_cmd_compile)
+cmd_COMPILE.f95  = $(__fc_cmd_compile)
+cmd_COMPILE.for  = $(__fc_cmd_compile)
+cmd_LINK.fc      = $(__fc_cmd_link.$(BUILT_TYPE))
+cmd_LINK        ?= $(cmd_LINK.fc)#  < proposed linker command
 
 #-- user parameters --
 
-MOD_DIR     ?= $(OUT_DIR)
-MOD_DIR_doc ?= output directory for putting generated module files
+FC                  ?= $(firstword $(mk_FC_list))
+FC_doc              ?= used fortran compiler: {$(call mk_csv,$(mk_FC_list))}
+FC_CFLAGS           ?= 
+FC_CFLAGS_doc       ?= fortran compile flags, applied to any file
+FC_FLAGS            ?=
+FC_FLAGS_doc        ?= fortran flags, applied to any compile and link command
+FC_INCLUDE_DIRS     ?=
+FC_INCLUDE_DIRS_doc ?= fortran include directories
+FC_LFLAGS           ?= 
+FC_LFLAGS_doc       ?= fortran link flags, applied to any file
+FC_LIBRARIES        ?=
+FC_LIBRARIES_doc    ?= list of linked libraries
+FC_LIBRARY_DIRS     ?=
+FC_LIBRARY_DIRS_doc ?= list of library directories
+FC_LINK_INPUT       ?=
+FC_LINK_INPUT_doc   ?= list of other link input files 
+FC_MOD_DIR          ?= $(OUT_DIR)
+FC_MOD_DIR_doc      ?= output directory for generated fortran module files
+FC_PP_DEFINES       ?=
+FC_PP_DEFINES_doc   ?= list of fortran preprocessor defines
 
 #-- exposed compiler switches --
 
-fc          = $(__fc_$(CMPL))#          < compiler call
-fc_c        = $(__fc_c_$(CMPL))#        < compile only (no linking)
-fc_g        = $(__fc_g_$(CMPL))#        < compile with debug info
-fc_O0       = $(__fc_O0_$(CMPL))#       < optimization level O0
-fc_O1       = $(__fc_O1_$(CMPL))#       < optimization level O1
-fc_O2       = $(__fc_O2_$(CMPL))#       < optimization level O2
-fc_O3       = $(__fc_O3_$(CMPL))#       < optimization level O3
-fc_o        = $(__fc_o_$(CMPL))#        < output file
-fc_m        = $(__fc_m_$(CMPL))#        < architecture
-fc_fpp      = $(__fc_fpp_$(CMPL))#      < enable preprocessor
-fc_fpp77    = $(__fc_fpp77_$(CMPL))#    < enable preprocessor for fixed format source
-fc_E        = $(__fc_E_$(CMPL))#        < preprocess only - implies fc_fpp
-fc_D        = $(__fc_D_$(CMPL))#        < define preprocessor symbol
-fc_I        = $(__fc_I_$(CMPL))#        < include directory
-fc_L        = $(__fc_L_$(CMPL))#        < link directory
-fc_l        = $(__fc_l_$(CMPL))#        < link libraray
-fc_Mod      = $(__fc_Mod_$(CMPL))#      < directory for module output
-fc_pic      = $(__fc_pic_$(CMPL))#      < generate position independent code (pic) for shared libraries
+fc          = $(__fc_$(FC))#          < compiler call
+fc_c        = $(__fc_c_$(FC))#        < compile only (no linking)
+fc_g        = $(__fc_g_$(FC))#        < compile with debug info
+fc_O0       = $(__fc_O0_$(FC))#       < optimization level O0
+fc_O1       = $(__fc_O1_$(FC))#       < optimization level O1
+fc_O2       = $(__fc_O2_$(FC))#       < optimization level O2
+fc_O3       = $(__fc_O3_$(FC))#       < optimization level O3
+fc_o        = $(__fc_o_$(FC))#        < output file
+fc_m        = $(__fc_m_$(FC))#        < architecture
+fc_fpp      = $(__fc_fpp_$(FC))#      < enable preprocessor
+fc_fpp77    = $(__fc_fpp77_$(FC))#    < enable preprocessor for fixed format source
+fc_E        = $(__fc_E_$(FC))#        < preprocess only - implies fc_fpp
+fc_D        = $(__fc_D_$(FC))#        < define preprocessor symbol
+fc_I        = $(__fc_I_$(FC))#        < include directory
+fc_L        = $(__fc_L_$(FC))#        < link directory
+fc_l        = $(__fc_l_$(FC))#        < link libraray
+fc_mod      = $(__fc_mod_$(FC))#      < directory for module output
+fc_pic      = $(__fc_pic_$(FC))#      < generate position independent code (pic) for shared libraries
 
 #-- targets --
 
@@ -66,7 +85,7 @@ __fc_D_gfortran     := -D
 __fc_I_gfortran     := -I
 __fc_L_gfortran     := -L
 __fc_l_gfortran     := -l
-__fc_Mod_gfortran   := -J
+__fc_mod_gfortran   := -J
 __fc_pic_gfortran   := -shared -fpic
                     
 __fc_ifort          := ifort
@@ -85,7 +104,7 @@ __fc_D_ifort        := -D
 __fc_I_ifort        := -I
 __fc_L_ifort        := -L
 __fc_l_ifort        := -l
-__fc_Mod_ifort      := -module
+__fc_mod_ifort      := -module
 __fc_pic_ifort      := -shared -fpic
 
 #-- derive private flaglists --
@@ -93,14 +112,14 @@ __fc_pic_ifort      := -shared -fpic
 __fc_pp_defines__    = $(FC_PP_DEFINES) $(call mk_tagged,FC_PP_DEFINES)
 __fc_pp_defines      = $(__fc_pp_defines__:%=$(fc_D)%)
 
-__fc_include_dirs__  = $(MOD_DIR) $(FC_INCLUDE_DIRS) $(call mk_tagged,FC_INCLUDE_DIRS)
+__fc_include_dirs__  = $(FC_MOD_DIR) $(FC_INCLUDE_DIRS) $(call mk_tagged,FC_INCLUDE_DIRS)
 __fc_include_dirs    = $(__fc_include_dirs__:%=$(fc_I)%)
 
 __fc_flags__         = $(FC_FLAGS) $(call mk_tagged,FC_FLAGS)
 __fc_flags.shared    = $(fc_pic)
-__fc_flags           = $(fc_m)$(ARCH) $(__fc_flags.$(TYPE)) $(__fc_flags__)
+__fc_flags           = $(fc_m)$(ARCH) $(__fc_flags.$(BUILT_TYPE)) $(__fc_flags__)
 
-__fc_cflags__        = $(fc_Mod) $(MOD_DIR) $(FC_CFLAGS) $(call mk_tagged,FC_CFLAGS)
+__fc_cflags__        = $(fc_mod) $(FC_MOD_DIR) $(FC_CFLAGS) $(call mk_tagged,FC_CFLAGS)
 __fc_cflags          = $(__fc_cflags__) $(__fc_flags) $(__fc_include_dirs) $(__fc_pp_defines)
 
 __fc_fpp__           = $(fc) $(fc_E) $(__fc_cflags)
