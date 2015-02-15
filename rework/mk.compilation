@@ -86,8 +86,9 @@ __out_file_name_exe    = $(1)
 __out_file_name_of     = $(call __out_file_name_$2,$1)
 __out_file_name        = $(call __out_file_name_of,$(OUT_NAME).$(TAG),$(BUILT_TYPE))
 
-__tpl_rule        = $(BUILD_DIR)/%.o: [d]%.[t]\n\t$(cmd_COMPILE.[t])
-__tpl_link_tgt    = $(OUT_FILE): $(sort $(mk_OUTPUT_DIRS:%=%\/)) $(mk_OBJECTS)\n\t\#>> link\n\t$(cmd_LINK)\n\t\#>> sucess
+__logged_cmd      = echo $(filter-out ,$(cmd_$1)) $(cmd_LOG) && $(cmd_$1) $(cmd_LOG)
+__tpl_link_tgt    = $(OUT_FILE): $(sort $(mk_OUTPUT_DIRS:%=%\/)) $(mk_OBJECTS)\n\t$(call __logged_cmd,LINK)
+__tpl_rule        = $(BUILD_DIR)/%.o: [d]%.[t]\n\t@$(call __logged_cmd,COMPILE.[t])
 __rule_of         = $(subst [d],$1,$(subst [t],$2,$(value __tpl_rule)))
 
 __echo_rule_of    = $(shell echo '$(call __rule_of,$1,$2)' >> $3)
@@ -95,7 +96,8 @@ __echo_obj_dep_of = $(shell echo '$(call mk_object_of,$1): $1' >> $2)
 
 __mk_link_target  = $(shell echo '$(value __tpl_link_tgt)' > $(mk_DEPS))
 __mk_object_deps  = $(foreach f,$(__source_files),$(call __echo_obj_dep_of,$f,$(mk_DEPS)))
-__mk_type_rules   = $(foreach t,$(mk_FILE_TYPES),$(foreach d,$(__source_dirs),$(call __echo_rule_of,$d,$t,$(mk_DEPS))))
+#__mk_type_rules   = $(foreach t,$(mk_FILE_TYPES),$(foreach d,$(__source_dirs),$(call __echo_rule_of,$d,$t,$(mk_DEPS))))
+__mk_type_rules   = $(foreach t,$(mk_FILE_TYPES),$(call __echo_rule_of,,$t,$(mk_DEPS)))
 
 __ignored_files   = $(IGNORE_FILES) $(call mk_tagged,IGNORE_FILES)
 __source_files    = $(filter-out $(__ignored_files),$(SOURCE_FILES) $(call mk_tagged,SOURCE_FILES))
@@ -105,6 +107,8 @@ mk_OBJECTS        = $(call mk_object_of,$(__source_files))
 
 #__sub_libraries   = $(foreach p,$(__sub_packages),lib$(p).$(TAG))
 #__tpl_rule_subpkg = $(OUT_DIR)/[pkg]:\n\t$(MAKE) 
+
+VPATH = $(subst $(mk_SPACE),:,$(__source_dirs))
 
 include $(MAKEIT_DIR)/mk.base
 include $(MAKEIT_DIR)/mk.log

@@ -32,9 +32,9 @@ eval.%:
 	@echo $(call __eval,$(call mk_ssv,$*))
 
 
-echo.*_doc = echo make variable, e.g. make echo.CFG
+echo.*_doc = echo make variable and specify its origin, e.g. make origin.CFG
 echo.%:
-	@echo $* = $($*)
+	@echo $* = [$(origin $*)] $($*)
 
 
 %/:

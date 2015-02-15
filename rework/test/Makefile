@@ -1,6 +1,6 @@
 
 TARGET_doc = Some project for\\n testing make files
-SOURCE_FILES         = $(call any_source) $(call any_source_in,sub)
+SOURCE_FILES         = $(call any_source) $(call any_source_in,sub) $(call any_source_in,../../../libfortres/include/fortran)
 #IGNORE_FILES.32     = func1.f90
 #IGNORE_FILES.64     = func2.f90
 #IGNORE_FILES.%      = testinger.f90
@@ -8,9 +8,9 @@ SOURCE_FILES         = $(call any_source) $(call any_source_in,sub)
 #SUB_DIRS = sub
 
 FC_PP_DEFINES     =
-FC_INCLUDE_DIRS   =
+FC_INCLUDE_DIRS   = #../../../libadt/include
 FC_FLAGS          =
-FC_CFLAGS         = 
+FC_CFLAGS         = $(fc_fpp)
 FC_CFLAGS.debug   = $(fc_g)
 FC_CFLAGS.release = $(fc_O3)
 

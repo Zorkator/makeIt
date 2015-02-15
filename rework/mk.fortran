@@ -19,7 +19,7 @@ cmd_LINK        ?= $(cmd_LINK.fc)#  < proposed linker command
 
 #-- user parameters --
 
-FC                  ?= $(firstword $(mk_FC_list))
+FC                   = $(firstword $(mk_FC_list))
 FC_doc              ?= used fortran compiler: {$(call mk_csv,$(mk_FC_list))}
 FC_CFLAGS           ?= 
 FC_CFLAGS_doc       ?= fortran compile flags, applied to any file
@@ -137,7 +137,7 @@ __fc_lflags          = $(__fc_lflags__) $(__fc_flags) $(__fc_library_dirs)
 __fc_link_input__    = $(FC_LINK_INPUT) $(call mk_tagged,FC_LINK_INPUT)
 __fc_link_input      = $(sort $(mk_OBJECTS)) $(__fc_link_input__) $(__fc_libraries)
 
-__fc_cmd_compile     = $(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@ $(cmd_LOG)
+__fc_cmd_compile     = $(fc) $(fc_c) $(__fc_cflags) $(call mk_tagged_file,$*) $< $(fc_o) $@
 
 __fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
 __fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(OUT_FILE) $(__fc_link_input)
