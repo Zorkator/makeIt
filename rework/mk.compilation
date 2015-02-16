@@ -5,7 +5,7 @@ mk_PARAMETERS   += BUILT_TYPE CFG ARCH TAG BUILD_DIR OUT_DIR OUT_NAME OUT_FILE_N
 mk_TAG_CLASSES  += BUILT_TYPE CFG ARCH
 mk_TARGETS      += clean $(mk_CFG_list) #$(__sub_packages)
 mk_FILE_TYPES   += 
-mk_OUTPUT_DIRS  += $(BUILD_DIR)
+mk_OUTPUT_DIRS  += $(BUILD_DIR) $(OUT_DIR)
 #mk_SUB_LIBS     += $(__sub_libraries)
 mk_DEPS         := .mk.deps
 
@@ -14,8 +14,8 @@ mk_ARCH_list    +=
 mk_CFG_list      = $(CONFIGURATIONS)
 mk_TAG_list      = $(filter-out BUILT_TYPE,$(mk_TAG_CLASSES))
 
-mk_tagged        = $(foreach c,$(sort $(mk_TAG_list) mk_ANY),$($(1).$($(c))))
-mk_tagged_file   = $(call mk_tagged,$(notdir $(1)))
+mk_tagged        = $(foreach c,$(sort $(mk_TAG_CLASSES) mk_ANY),$($(1).$($(c))))
+mk_effective     = $(or $(strip $(call mk_tagged,$(notdir $2))),$(strip $(call mk_tagged,$1)),$(strip $($1)))
 mk_object_of     = $(patsubst %,$(BUILD_DIR)/%.o,$(notdir $(basename $(1))))
 
 any_source       = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
@@ -91,18 +91,18 @@ __tpl_link_tgt    = $(OUT_FILE): $(sort $(mk_OUTPUT_DIRS:%=%\/)) $(mk_OBJECTS)\n
 __tpl_rule        = $(BUILD_DIR)/%.o: [d]%.[t]\n\t$(call __logged_cmd,COMPILE.[t])
 __rule_of         = $(subst [d],$1,$(subst [t],$2,$(value __tpl_rule)))
 
-__echo_rule_of    = $(shell echo '$(call __rule_of,$1,$2)' >> $3)
+__echo_rule_of    = $(shell echo -e '$(call __rule_of,$1,$2)' >> $3)
 __echo_obj_dep_of = $(shell echo '$(call mk_object_of,$1): $1' >> $2)
 
-__mk_link_target  = $(shell echo '$(value __tpl_link_tgt)' > $(mk_DEPS))
+__mk_link_target  = $(shell echo -e '$(value __tpl_link_tgt)' > $(mk_DEPS))
 __mk_object_deps  = $(foreach f,$(__source_files),$(call __echo_obj_dep_of,$f,$(mk_DEPS)))
 #__mk_type_rules   = $(foreach t,$(mk_FILE_TYPES),$(foreach d,$(__source_dirs),$(call __echo_rule_of,$d,$t,$(mk_DEPS))))
 __mk_type_rules   = $(foreach t,$(mk_FILE_TYPES),$(call __echo_rule_of,,$t,$(mk_DEPS)))
 
-__ignored_files   = $(IGNORE_FILES) $(call mk_tagged,IGNORE_FILES)
-__source_files    = $(filter-out $(__ignored_files),$(SOURCE_FILES) $(call mk_tagged,SOURCE_FILES))
+__ignored_files   = $(call mk_effective,IGNORE_FILES)
+__source_files    = $(filter-out $(__ignored_files),$(call mk_effective,SOURCE_FILES))
 __source_dirs     = $(sort $(dir $(__source_files)))
-__sub_packages    = $(SUB_PACKAGES) $(call mk_tagged,SUB_PACKAGES)
+__sub_packages    = $(call mk_effective,SUB_PACKAGES)
 mk_OBJECTS        = $(call mk_object_of,$(__source_files))
 
 #__sub_libraries   = $(foreach p,$(__sub_packages),lib$(p).$(TAG))

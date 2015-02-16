@@ -26,15 +26,20 @@ help:
 	@echo -e \ $(__var_tab)
 
 
+help.*_doc = echo value of make variable and specify its origin, e.g. make origin.CFG
+help.%:
+	@echo $* = [$(origin $*)] $($*)
+
+
+echo.*_doc = echo value of make variable 
+echo.%:
+	@echo $($*)
+
+
 eval.*_doc = evaluate a make variable by calling with argument, e.g. make eval._mkFunc,arg
 __eval     = $(call $(firstword $1),$(wordlist 2,99,$1))
 eval.%:
 	@echo $(call __eval,$(call mk_ssv,$*))
-
-
-echo.*_doc = echo make variable and specify its origin, e.g. make origin.CFG
-echo.%:
-	@echo $* = [$(origin $*)] $($*)
 
 
 %/:
