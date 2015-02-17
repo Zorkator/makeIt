@@ -13,9 +13,10 @@ mk_BUILT_TYPE_list += static shared exe
 mk_ARCH_list       +=
 mk_CFG_list         = $(CONFIGURATIONS)
 mk_TAG_list         = $(filter-out BUILT_TYPE,$(mk_TAG_CLASSES))
+mk_TAG_CLASS_list   = $(sort $(mk_TAG_CLASSES) mk_ANY)
 
-mk_tagged           = $(foreach c,$(sort $(mk_TAG_CLASSES) mk_ANY),$($(1).$($(c))))
-mk_effective        = $(or $(strip $(call mk_tagged,$(notdir $2))),$(strip $(call mk_tagged,$1)),$(strip $($1)))
+mk_tagged           = $(subst \\, ,$(strip $(foreach c,$(mk_TAG_CLASS_list),$(call mk_var,$1.$($c)))))
+mk_effective        = $(or $(call mk_tagged,$(notdir $2)),$(call mk_tagged,$1),$($1))
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
 
 any_source          = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
@@ -29,7 +30,7 @@ debug_doc          ?= target for building with debug options
 release_doc        ?= target for building with optimization and without debug options
 
 BUILT_TYPE         ?= $(firstword $(mk_BUILT_TYPE_list))
-BUILT_TYPE_doc     ?= type of built binary: {$(call mk_csv,$(mk_BUILT_TYPE_list))}
+BUILT_TYPE_doc     ?= type of built binary: {$(smk_csv,$(mk_BUILT_TYPE_list))}
 mk_BUILT_TYPE       = $(call mk_effective,BUILT_TYPE)
 
 ARCH               ?= $(firstword $(mk_ARCH_list))
@@ -64,21 +65,28 @@ OUT_FILE           ?= $(mk_OUT_DIR)/$(mk_OUT_FILE_NAME)
 OUT_FILE_doc       ?= path and file name of the final result
 mk_OUT_FILE         = $(call mk_effective,OUT_FILE)
 
-mk_SOURCE_FILES     = $(call mk_effective,SOURCE_FILES)
+mk_PRIORITY_SOURCE  = $(call mk_effective,PRIORITY_SOURCE)
+mk_SOURCE_FILES     = $(call mk_effective,SOURCE_FILES) $(mk_PRIORITY_SOURCE)
 mk_IGNORE_FILES     = $(call mk_effective,IGNORE_FILES)
 mk_SUB_PACKAGES     = $(call mk_effective,SUB_PACKAGES)
 
 #-- targets --
 
-.PHONY: $(mk_TARGETS) build
+.PHONY: $(mk_TARGETS) default prepare
 
-build:
+default: prepare
+ifneq ($(mk_PRIO_OBJECTS),)
+	@$(MAKE) $(mk_PRIO_OBJECTS) -j1
+endif
+	@$(MAKE) $(mk_OUT_FILE)
+
+
+prepare:
 	#-- evaluate auto-depends
 	@$(__mk_link_target)
 	@$(__mk_object_deps)
+	#@$(__ mk_prio_deps)
 	@$(__mk_type_rules)
-	@$(MAKE) $(mk_OUT_FILE)
-	#@rm $(mk_DEPS)
 	
 
 $(mk_CFG_list):
@@ -100,7 +108,7 @@ __out_file_name_of     = $(call __out_file_name_$2,$1)
 __out_file_name        = $(call __out_file_name_of,$(mk_OUT_NAME).$(mk_TAG),$(mk_BUILT_TYPE))
 
 __logged_cmd      = @echo $(filter-out ,$(cmd_$1)) $(cmd_LOG) && $(cmd_$1) $(cmd_LOG)
-__tpl_link_tgt    = $(mk_OUT_FILE): $(sort $(mk_OUTPUT_DIRS:%=%\/)) $(mk_OBJECTS)\n\t$(call __logged_cmd,LINK)
+__tpl_link_tgt    = $(mk_OUT_FILE): $(mk_OBJECTS)\n\t$(call __logged_cmd,LINK)\n$(mk_OBJECTS): | $(sort $(mk_OUTPUT_DIRS:%=%\/))
 __tpl_rule        = $(mk_BUILD_DIR)/%.o: [d]%.[t]\n\t$(call __logged_cmd,COMPILE.[t])
 __rule_of         = $(subst [d],$1,$(subst [t],$2,$(value __tpl_rule)))
 
@@ -113,8 +121,16 @@ __mk_object_deps  = $(foreach f,$(__source_files),$(call __echo_obj_dep_of,$f,$(
 __mk_type_rules   = $(foreach t,$(mk_FILE_TYPES),$(call __echo_rule_of,,$t,$(mk_DEPS)))
 
 __source_files    = $(filter-out $(mk_IGNORE_FILES),$(mk_SOURCE_FILES))
+__prioritiy_files = $(filter-out $(mk_IGNORE_FILES),$(mk_PRIORITY_SOURCE))
 __source_dirs     = $(sort $(dir $(__source_files)))
+mk_PRIO_OBJECTS   = $(call mk_object_of,$(__prioritiy_files))
 mk_OBJECTS        = $(call mk_object_of,$(__source_files))
+
+#__mk_head      = $(and $(word 1,$1),$(word 2,$1))
+#__mk_tail      = $(wordlist 2,$(words $1),$1)
+#__mk_pair      = $(call mk_object_of,$(word 2,$1)): $(word 2,$1) $(call mk_object_of,$(word 1,$1))
+#__mk_list      = $(if $(__mk_head),$(shell $(mk_echo) '$(call __mk_list, $(__mk_tail))$(call __mk_pair,$1)' >> $(mk_DEPS)),)
+#__mk_prio_deps = $(call __mk_list,$(mk_PRIO_SOURCE))
 
 #__sub_libraries   = $(foreach p,$(mk_SUB_PACKAGES),lib$(p).$(TAG))
 #__tpl_rule_subpkg = $(OUT_DIR)/[pkg]:\n\t$(MAKE) 
