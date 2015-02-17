@@ -7,13 +7,15 @@ cmd_LOG        = $(__log)
 
 LOG          ?= on
 LOG_doc      ?= switch to enable/disable logging {on, off}
+mk_LOG        = $(LOG)
 
-LOG_FILE     ?= $(BUILD_DIR)/_build.log
+LOG_FILE     ?= $(mk_BUILD_DIR)/_build.log
 LOG_FILE_doc ?= file for logging build messages. default: <BUILD_DIR>/_build.log
+mk_LOG_FILE   = $(LOG_FILE)
 
 #-- definitions for build step logging ...
 
-__log_on  = 2>&1 | tee -a $(LOG_FILE)
+__log_on  = 2>&1 | tee -a $(mk_LOG_FILE)
 __log_off =
-__log     = $(__log_$(LOG))
+__log     = $(__log_$(mk_LOG))
 

@@ -9,6 +9,7 @@ mk_SPACE      := $(mk_NULL) #
 mk_COMMA      := ,
 mk_DOLLAR     := $$
 mk_ANY        := %
+mk_echo        = $(if `echo -e`,echo,echo -e)
 
 mk_lower       = $(shell echo $(1) | tr A-Z a-z)
 mk_upper       = $(shell echo $(1) | tr a-z A-Z)
@@ -19,11 +20,11 @@ mk_ssv         = $(subst $(mk_COMMA),$(mk_SPACE),$(strip $1))
 
 help_doc = print overview over supported parameters and targets
 help:
-	@echo -e \ $(TARGET_doc)\\n
+	@$(mk_echo) \ $(TARGET_doc)
 	@echo == SUPPORTED TARGETS ==
-	@echo -e \ $(__tgt_tab)
+	@$(mk_echo) \ $(__tgt_tab)
 	@echo == SUPPORTED PARAMETERS ==
-	@echo -e \ $(__var_tab)
+	@$(mk_echo) \ $(__var_tab)
 
 
 help.*_doc = echo value of make variable and specify its origin, e.g. make origin.CFG
@@ -48,9 +49,9 @@ eval.%:
 
 #-- private definitions --
 
-__var_doc = "$(shell printf '%-20s %s  [%s]\\n' '$(1)' '$($(1)_doc)' '$($(1))')"
-__var_tab = $(foreach v,$(sort $(mk_PARAMETERS)),$(call __var_doc,$(v)))
+__var_doc = "$(shell printf '%-20s %s  [%s]\\n' '$1' '$($(1)_doc)' '$(mk_$1)')"
+__var_tab = $(foreach v,$(sort $(mk_PARAMETERS)),$(call __var_doc,$v))
 
-__tgt_doc = "$(shell printf '%-10s %s\\n' '$(1)' '$($(1)_doc)')"
-__tgt_tab = $(foreach t,$(sort $(mk_TARGETS)),$(call __tgt_doc,$(t)))
+__tgt_doc = "$(shell printf '%-10s %s\\n' '$1' '$($(1)_doc)')"
+__tgt_tab = $(foreach t,$(sort $(mk_TARGETS)),$(call __tgt_doc,$t))
 
