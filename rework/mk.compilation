@@ -3,11 +3,12 @@
 
 mk_PARAMETERS   += BUILT_TYPE CFG ARCH TAG BUILD_DIR OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE
 mk_TAG_CLASSES  += BUILT_TYPE CFG ARCH
-mk_TARGETS      += clean $(mk_CFG_list) #$(__sub_packages)
+mk_TARGETS      += clean $(mk_CFG_list)
 mk_FILE_TYPES   += 
 mk_OUTPUT_DIRS  += $(mk_BUILD_DIR) $(mk_OUT_DIR)
 #mk_SUB_LIBS     += $(__sub_libraries)
 mk_DEPS         := .mk.deps
+cmd_FINALIZE    := @echo '\>> done'
 
 mk_BUILT_TYPE_list += static shared exe
 mk_ARCH_list       +=
@@ -18,9 +19,11 @@ mk_TAG_CLASS_list   = $(sort $(mk_TAG_CLASSES) mk_ANY)
 mk_tagged           = $(subst \\, ,$(strip $(foreach c,$(mk_TAG_CLASS_list),$(call mk_var,$1.$($c)))))
 mk_effective        = $(or $(call mk_tagged,$(notdir $2)),$(call mk_tagged,$1),$($1))
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
+mk_pkg_args         = CFG=$(mk_CFG) ARCH=$(mk_ARCH) OUT_NAME=$(notdir $1) OUT_DIR="$(abspath $(mk_BUILD_DIR))"
 
 any_source          = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
 any_source_in       = $(foreach t,$(mk_FILE_TYPES),$(wildcard $(1)/*.$(t)))
+svn_revision       := `svn info | sed -ne 's/^Revision: //p'`
 
 
 #-- user parameters --
@@ -60,28 +63,36 @@ mk_OUT_NAME         = $(call mk_effective,OUT_NAME)
 OUT_FILE_NAME      ?= $(__out_file_name)
 OUT_FILE_NAME_doc  ?= the file name of the final result
 mk_OUT_FILE_NAME    = $(call mk_effective,OUT_FILE_NAME)
+mk_OUT_FILE_NAME_SO = $(call mk_effective,OUT_FILE_NAME)$(mk_MAYOR)$(mk_MINOR)
 
 OUT_FILE           ?= $(mk_OUT_DIR)/$(mk_OUT_FILE_NAME)
 OUT_FILE_doc       ?= path and file name of the final result
 mk_OUT_FILE         = $(call mk_effective,OUT_FILE)
+mk_OUT_FILE_SO      = $(call mk_effective,OUT_FILE)$(mk_MAYOR)$(mk_MINOR)
 
-mk_PRIORITY_SOURCE  = $(call mk_effective,PRIORITY_SOURCE)
-mk_SOURCE_FILES     = $(call mk_effective,SOURCE_FILES) $(mk_PRIORITY_SOURCE)
+MAYOR              ?= 0
+MAYOR_doc          ?= mayor version number
+mk_MAYOR            = $(if $(MAYOR),.$(MAYOR),)
+
+MINOR              ?= $(svn_revision)
+MINOR_doc          ?= minor version number, e.g. svn revision
+mk_MINOR            = $(if $(MINOR),.$(MINOR),)
+
+mk_SOURCE_FILES     = $(call mk_effective,SOURCE_FILES)
 mk_IGNORE_FILES     = $(call mk_effective,IGNORE_FILES)
 mk_SUB_PACKAGES     = $(call mk_effective,SUB_PACKAGES)
+mk_PKG_LIBRARIES    = $(patsubst %,%.$(mk_TAG),$(notdir $(mk_SUB_PACKAGES)))
 
 #-- targets --
 
 .PHONY: $(mk_TARGETS) default prepare
 
-default: prepare
-ifneq ($(mk_PRIO_OBJECTS),)
-	@$(MAKE) $(mk_PRIO_OBJECTS) -j1
-endif
-	@$(MAKE) $(mk_OUT_FILE)
+default: $(mk_DEPS)
+	$(foreach p,$(mk_SUB_PACKAGES),$(MAKE) -C $p $(call mk_pkg_args,$p))
+	$(MAKE) $(mk_OUT_FILE)
 
 
-prepare:
+$(mk_DEPS):
 	#-- evaluate auto-depends
 	@$(__mk_link_target)
 	@$(__mk_object_deps)
@@ -95,8 +106,8 @@ $(mk_CFG_list):
 
 clean_doc = clear build directory [$(mk_BUILD_DIR)] by removing object files
 clean:
-	@rm -f $(mk_OBJECTS) $(LOG_FILE)
-	#@$(foreach d,$(__sub_packages),$(shell cd $d && $(MAKE) clean))
+	@rm -f $(mk_OBJECTS) $(LOG_FILE) $(mk_DEPS)
+	@$(foreach p,$(mk_SUB_PACKAGES),$(MAKE) -C $p $(call mk_pkg_args,$p) clean)
 
 
 #-- set/derive private variables/lists --
@@ -108,22 +119,21 @@ __out_file_name_of     = $(call __out_file_name_$2,$1)
 __out_file_name        = $(call __out_file_name_of,$(mk_OUT_NAME).$(mk_TAG),$(mk_BUILT_TYPE))
 
 __logged_cmd      = @echo $(filter-out ,$(cmd_$1)) $(cmd_LOG) && $(cmd_$1) $(cmd_LOG)
-__tpl_link_tgt    = $(mk_OUT_FILE): $(mk_OBJECTS)\n\t$(call __logged_cmd,LINK)\n$(mk_OBJECTS): | $(sort $(mk_OUTPUT_DIRS:%=%\/))
+__tpl_link_tgt    = $(mk_OUT_FILE): $(mk_OBJECTS)\n\t$(call __logged_cmd,LINK)\n\t$(cmd_FINALIZE)
+__tpl_dirs_tgt    = $(mk_OBJECTS): | $(sort $(mk_OUTPUT_DIRS:%=%\/))
 __tpl_rule        = $(mk_BUILD_DIR)/%.o: [d]%.[t]\n\t$(call __logged_cmd,COMPILE.[t])
 __rule_of         = $(subst [d],$1,$(subst [t],$2,$(value __tpl_rule)))
 
 __echo_rule_of    = $(shell $(mk_echo) '$(call __rule_of,$1,$2)' >> $3)
 __echo_obj_dep_of = $(shell echo '$(call mk_object_of,$1): $1' >> $2)
 
-__mk_link_target  = $(shell $(mk_echo) '$(value __tpl_link_tgt)' > $(mk_DEPS))
+__mk_link_target  = $(shell $(mk_echo) '$(value __tpl_link_tgt)\n$(value __tpl_dirs_tgt)' > $(mk_DEPS))
 __mk_object_deps  = $(foreach f,$(__source_files),$(call __echo_obj_dep_of,$f,$(mk_DEPS)))
 #__mk_type_rules   = $(foreach t,$(mk_FILE_TYPES),$(foreach d,$(__source_dirs),$(call __echo_rule_of,$d,$t,$(mk_DEPS))))
 __mk_type_rules   = $(foreach t,$(mk_FILE_TYPES),$(call __echo_rule_of,,$t,$(mk_DEPS)))
 
 __source_files    = $(filter-out $(mk_IGNORE_FILES),$(mk_SOURCE_FILES))
-__prioritiy_files = $(filter-out $(mk_IGNORE_FILES),$(mk_PRIORITY_SOURCE))
 __source_dirs     = $(sort $(dir $(__source_files)))
-mk_PRIO_OBJECTS   = $(call mk_object_of,$(__prioritiy_files))
 mk_OBJECTS        = $(call mk_object_of,$(__source_files))
 
 #__mk_head      = $(and $(word 1,$1),$(word 2,$1))

@@ -2,7 +2,7 @@
 #-- set/modify public definitions --
 
 mk_PARAMETERS += 
-mk_TARGETS    += help echo.* eval.*
+mk_TARGETS    += help echo.* eval.* value.*
 
 mk_NULL       :=
 mk_SPACE      := $(mk_NULL) #
@@ -24,9 +24,9 @@ mk_var         = $(if $(call mk_defined,$1),\\$($1),)
 help_doc = print overview over supported parameters and targets
 help:
 	@$(mk_echo) \ $(TARGET_doc)
-	@echo == SUPPORTED TARGETS ==
+	@echo == KNOWN TARGETS ==
 	@$(mk_echo) \ $(__tgt_tab)
-	@echo == SUPPORTED PARAMETERS ==
+	@echo == CURRENT PARAMETERS ==
 	@$(mk_echo) \ $(__var_tab)
 
 
@@ -35,7 +35,7 @@ help.%:
 	@echo $* = [$(origin $*)] $($*)
 
 
-echo.*_doc = echo value of make variable 
+echo.*_doc = evaluate value of make variable 
 echo.%:
 	@echo $($*)
 
@@ -46,13 +46,17 @@ eval.%:
 	@echo $(call __eval,$(call mk_ssv,$*))
 
 
+value.*_doc = show value of make variable
+value.%:
+	@echo '$(value $*)'
+
 %/:
 	@mkdir -p $@
 
 
 #-- private definitions --
 
-__var_doc = "$(shell printf '%-20s %s  [%s]\\n' '$1' '$($(1)_doc)' '$(strip $(mk_$1))')"
+__var_doc = "$(shell printf '%-20s %-65s by %-12s  %s\\n' '$1' '$(strip $(mk_$1))' '$(origin $1)' '$($(1)_doc)' )"
 __var_tab = $(foreach v,$(sort $(mk_PARAMETERS)),$(call __var_doc,$v))
 
 __tgt_doc = "$(shell printf '%-10s %s\\n' '$1' '$($(1)_doc)')"
