@@ -1,7 +1,7 @@
 
 #-- set/modify public definitions --
 
-mk_PARAMETERS   += FC FC_MOD_DIR FC_PP_DEFINES FC_INCLUDE_DIRS FC_FLAGS FC_CFLAGS FC_LFLAGS FC_LIBRARY_DIRS FC_LIBRARIES FC_LINK_INPUT
+mk_PARAMETERS   += FC FC_MOD_DIR FC_PP_DEFINES FC_INCLUDE_DIRS FC_FLAGS FC_CFLAGS FC_LFLAGS FC_LIBRARY_DIRS FC_LIBRARIES FC_LINK_OTHER
 mk_TAG_CLASSES  += FC
 mk_TARGETS      += fpp.*
 mk_FILE_TYPES   += f95 f90 for f
@@ -47,9 +47,9 @@ FC_LIBRARY_DIRS     ?=
 FC_LIBRARY_DIRS_doc ?= list of library directories
 mk_FC_LIBRARY_DIRS   = $(call mk_effective,FC_LIBRARY_DIRS)
 
-FC_LINK_INPUT       ?=
-FC_LINK_INPUT_doc   ?= list of other link input files 
-mk_FC_LINK_INPUT     = $(call mk_effective,FC_LINK_INPUT)
+FC_LINK_OTHER       ?=
+FC_LINK_OTHER_doc   ?= list of other link input files 
+mk_FC_LINK_OTHER     = $(call mk_effective,FC_LINK_OTHER)
 
 #FC_MOD_DIR          ?= $(if $(filter exe,$(mk_BUILT_TYPE)),$(mk_BUILD_DIR),$(mk_OUT_DIR))
 FC_MOD_DIR          ?= $(mk_BUILD_DIR)
@@ -169,13 +169,14 @@ __fc_library_dirs    = $(patsubst %,$(fc_L)%,$(mk_OUT_DIR) $(mk_BUILD_DIR) $(mk_
 __fc_libraries       = $(patsubst %,$(fc_l)%,$(mk_PKG_LIBRARIES) $(mk_FC_LIBRARIES))
 __fc_lflags.shared   = $(fc_soname)$(mk_OUT_FILE_NAME)$(mk_MAYOR)
 __fc_lflags          = $(mk_FC_LFLAGS) $(__fc_flags) $(__fc_lflags.$(mk_BUILT_TYPE)) $(__fc_library_dirs)
-__fc_link_input      = $(sort $(mk_OBJECTS)) $(mk_FC_LINK_INPUT) $(__fc_libraries)
+__fc_link_objects    = $(sort $(mk_OBJECTS))
+__fc_link_input      = $(__fc_link_objects) $(mk_FC_LINK_OTHER) $(__fc_libraries)
 
 __fc_cmd_compile     = $(fc) $(fc_c) $(call __fc_cflags,$(notdir $*)) $< $(fc_o) $@
 
 __fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE) $(__fc_link_input)
 __fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_link_input) && $(__fc_symlnk_so) && $(__fc_copy_mods)
-__fc_cmd_link.static = ar rs $(mk_OUT_FILE) $(__fc_link_input) && $(__fc_copy_mods)
+__fc_cmd_link.static = ar rs $(mk_OUT_FILE) $(__fc_link_objects) && $(__fc_copy_mods)
 
 __fc_copy_mods       = cp $(mk_FC_MOD_DIR)/*.mod $(mk_OUT_DIR) 2> /dev/null || :
 __fc_symlnk_so       = ln -sf $(mk_OUT_FILE_NAME_SO) $(mk_OUT_FILE)$(mk_MAYOR) && ln -sf $(mk_OUT_FILE_NAME)$(mk_MAYOR) $(mk_OUT_FILE)

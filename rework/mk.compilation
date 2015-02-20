@@ -33,7 +33,7 @@ debug_doc          ?= target for building with debug options
 release_doc        ?= target for building with optimization and without debug options
 
 BUILT_TYPE         ?= $(firstword $(mk_BUILT_TYPE_list))
-BUILT_TYPE_doc     ?= type of built binary: {$(smk_csv,$(mk_BUILT_TYPE_list))}
+BUILT_TYPE_doc     ?= type of built binary: {$(call mk_csv,$(mk_BUILT_TYPE_list))}
 mk_BUILT_TYPE       = $(call mk_effective,BUILT_TYPE)
 
 ARCH               ?= $(firstword $(mk_ARCH_list))
