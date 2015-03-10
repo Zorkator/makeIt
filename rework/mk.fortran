@@ -14,7 +14,7 @@ cmd_COMPILE.f    = $(__fc_cmd_compile)
 cmd_COMPILE.f90  = $(__fc_cmd_compile)
 cmd_COMPILE.f95  = $(__fc_cmd_compile)
 cmd_COMPILE.for  = $(__fc_cmd_compile)
-cmd_LINK.fc      = $(__fc_cmd_link.$(mk_BUILT_TYPE))
+cmd_LINK.fc      = $(__fc_cmd_link.$(mk_BUILD_MODE))
 cmd_LINK        ?= $(cmd_LINK.fc)#  < proposed linker command
 
 #-- user parameters --
@@ -51,7 +51,7 @@ FC_LINK_OTHER       ?=
 FC_LINK_OTHER_doc   ?= list of other link input files 
 mk_FC_LINK_OTHER     = $(call mk_effective,FC_LINK_OTHER)
 
-#FC_MOD_DIR          ?= $(if $(filter exe,$(mk_BUILT_TYPE)),$(mk_BUILD_DIR),$(mk_OUT_DIR))
+#FC_MOD_DIR          ?= $(if $(filter exe,$(mk_BUILD_MODE)),$(mk_BUILD_DIR),$(mk_OUT_DIR))
 FC_MOD_DIR          ?= $(mk_BUILD_DIR)
 FC_MOD_DIR_doc      ?= output directory for generated fortran module files
 mk_FC_MOD_DIR        = $(call mk_effective,FC_MOD_DIR)
@@ -158,7 +158,7 @@ __fc_pp_defines      = $(mk_FC_PP_DEFINES:%=$(fc_D)%)
 __fc_include_dirs    = $(patsubst %,$(fc_I)%,$(mk_FC_MOD_DIR) $(mk_BUILD_DIR) $(mk_FC_INCLUDE_DIRS))
 
 __fc_flags.shared    = $(fc_pic)
-__fc_flags           = $(fc_m)$(mk_ARCH) $(__fc_flags.$(mk_BUILT_TYPE)) $(mk_FC_FLAGS)
+__fc_flags           = $(fc_m)$(mk_ARCH) $(__fc_flags.$(mk_BUILD_MODE)) $(mk_FC_FLAGS)
 
 __fc_cflags__        = $(fc_mod) $(mk_FC_MOD_DIR) $(call mk_effective,FC_CFLAGS,$1)
 __fc_cflags          = $(__fc_include_dirs) $(__fc_pp_defines) $(__fc_flags) $(call __fc_cflags__,$1)
@@ -168,7 +168,7 @@ __fc_fpp__           = $(fc) $(fc_E) $(call __fc_cflags,$1)
 __fc_library_dirs    = $(patsubst %,$(fc_L)%,$(mk_OUT_DIR) $(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS))
 __fc_libraries       = $(patsubst %,$(fc_l)%,$(mk_PKG_LIBRARIES) $(mk_FC_LIBRARIES))
 __fc_lflags.shared   = $(fc_soname)$(mk_OUT_FILE_NAME)$(mk_MAYOR)
-__fc_lflags          = $(mk_FC_LFLAGS) $(__fc_flags) $(__fc_lflags.$(mk_BUILT_TYPE)) $(__fc_library_dirs)
+__fc_lflags          = $(mk_FC_LFLAGS) $(__fc_flags) $(__fc_lflags.$(mk_BUILD_MODE)) $(__fc_library_dirs)
 __fc_link_objects    = $(sort $(mk_OBJECTS))
 __fc_link_input      = $(__fc_link_objects) $(mk_FC_LINK_OTHER) $(__fc_libraries)
 
