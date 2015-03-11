@@ -51,7 +51,6 @@ FC_LINK_OTHER       ?=
 FC_LINK_OTHER_doc   ?= list of other link input files 
 mk_FC_LINK_OTHER     = $(call mk_effective,FC_LINK_OTHER)
 
-#FC_MOD_DIR          ?= $(if $(filter exe,$(mk_BUILD_MODE)),$(mk_BUILD_DIR),$(mk_OUT_DIR))
 FC_MOD_DIR          ?= $(mk_BUILD_DIR)
 FC_MOD_DIR_doc      ?= output directory for generated fortran module files
 mk_FC_MOD_DIR        = $(call mk_effective,FC_MOD_DIR)
@@ -172,7 +171,7 @@ __fc_lflags          = $(mk_FC_LFLAGS) $(__fc_flags) $(__fc_lflags.$(mk_BUILD_MO
 __fc_link_objects    = $(sort $(mk_OBJECTS))
 __fc_link_input      = $(__fc_link_objects) $(mk_FC_LINK_OTHER) $(__fc_libraries)
 
-__fc_cmd_compile     = $(fc) $(fc_c) $(call __fc_cflags,$(notdir $*)) $< $(fc_o) $@
+__fc_cmd_compile     = $(fc) $(fc_c) $(call __fc_cflags,$(notdir $*)) $(call mk_fileType_opts,$(notdir $<)) $< $(fc_o) $@
 
 __fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE) $(__fc_link_input)
 __fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_link_input) && $(__fc_symlnk_so) && $(__fc_copy_mods)

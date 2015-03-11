@@ -10,14 +10,19 @@ mk_COMMA      := ,
 mk_DOLLAR     := $$
 mk_ANY        := %
 
-mk_echo        = $(if $(strip $(shell echo -e '')),echo,echo -e)
-mk_lower       = $(shell echo $(1) | tr A-Z a-z)
-mk_upper       = $(shell echo $(1) | tr a-z A-Z)
-mk_csv         = $(subst $(mk_SPACE),$(mk_COMMA),$(strip $1))
-mk_ssv         = $(subst $(mk_COMMA),$(mk_SPACE),$(strip $1))
-mk_reverse     = $(if $1,$(call mk_reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))
-mk_defined     = $(patsubst undefined,,$(origin $1))
-mk_var         = $(if $(call mk_defined,$1),\\$($1),)
+mk_echo          := echo -e
+mk_lower          = $(shell echo $(1) | tr A-Z a-z)#<                                          mk_lower( sTriNg )                 : string
+mk_upper          = $(shell echo $(1) | tr a-z A-Z)#<                                          mk_upper( sTriNg )                 : STRING
+mk_csv            = $(subst $(mk_SPACE),$(mk_COMMA),$(strip $1))#<                             mk_csv( v1 v2 ... )                : v1,v2,...
+mk_ssv            = $(subst $(mk_COMMA),$(mk_SPACE),$(strip $1))#<                             mk_ssv( 'v1,v2,...' )              : 'v1 v2 ...'
+mk_reverse        = $(if $1,$(call mk_reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))#< mk_reverse( v1 v2 ... )            : ... v2 v1
+mk_defined        = $(patsubst undefined,,$(origin $1))#<                                      mk_defined( varId )                : origin(varId) | ''
+mk_var            = $(if $(call mk_defined,$1),\\$($1),)#<                                     mk_var( varId )                    : \\$(varId) | ''
+
+mk_match          = $(shell [[ $1 == $2 ]] && echo '$(value 3)')#<                             mk_match( text, pattern, res )   : res | ''
+mk_matchRE        = $(shell [[ $1 =~ $2 ]] && echo '$(value 3)')#<                             mk_matchRE( text, re_pattern, res ): res | ''
+mk_pattern_opts   = $(foreach p,$($1),$(call mk_match,$2,$p,$($p)))#<                          mk_pattern_opts( PATTERN_list, text )
+mk_patternRE_opts = $(foreach p,$($1),$(call mk_matchRE,$2,$p,$($p)))#<                        mk_patternRE_opts( PATTERN_RE_list, text )
 
 #-- targets --
 

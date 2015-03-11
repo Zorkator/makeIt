@@ -8,16 +8,19 @@ mk_FILE_TYPES   +=
 mk_OUTPUT_DIRS  += $(mk_BUILD_DIR) $(mk_OUT_DIR)
 #mk_SUB_LIBS     += $(__sub_libraries)
 mk_DEPS         := .mk.deps
-cmd_FINALIZE    := @echo '\>> done'
+cmd_FINALIZE    := @echo '>> done'
 
 mk_OUT_TYPE_list   += static shared exe
 mk_ARCH_list       +=
 mk_CFG_list         = $(CONFIGURATIONS)
+mk_FILE_PATTERNS    = $(sort $(FILE_PATTERNS) $(mk_FILE_TYPES:%=*.%))
+mk_FILE_PATTERNS_RE = $(sort $(FILE_PATTERNS_RE))
 mk_TAG_list         = $(filter-out BUILD_MODE,$(mk_TAG_CLASSES))
 mk_TAG_CLASS_list   = $(sort $(mk_TAG_CLASSES) mk_ANY)
 
 mk_tagged           = $(subst \\, ,$(strip $(foreach c,$(mk_TAG_CLASS_list),$(call mk_var,$1.$($c)))))
 mk_effective        = $(or $(call mk_tagged,$(notdir $2)),$(call mk_tagged,$1),$($1))
+mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patternRE_opts,mk_FILE_PATTERNS_RE,$1)
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
 mk_pkg_args         = CFG=$(mk_CFG) ARCH=$(mk_ARCH) OUT_NAME=$(notdir $1) OUT_DIR="$(abspath $(mk_BUILD_DIR))"
 
@@ -97,6 +100,7 @@ mk_PKG_LIBRARIES    = $(patsubst %,%.$(mk_TAG),$(notdir $(mk_SUB_PACKAGES)))
 default: $(mk_DEPS)
 	$(foreach p,$(mk_SUB_PACKAGES),$(shell $(MAKE) -C $p $(call mk_pkg_args,$p)))
 	$(MAKE) $(mk_OUT_FILE)
+	@rm $(mk_DEPS)
 
 $(mk_DEPS):
 	#-- evaluate auto-depends
