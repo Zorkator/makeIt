@@ -1,6 +1,6 @@
 
 mk_PARAMETERS += LOG LOG_FILE
-cmd_LOG        = $(__log)
+mk_logged_cmd  = @echo $1 $(__log) && $1 $(__log)
 
 
 #-- parameters ...

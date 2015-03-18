@@ -61,7 +61,7 @@ value.%:
 
 #-- private definitions --
 
-__var_doc = "$(shell printf '%-20s %-65s by %-12s  %s\\n' '$1' '$(strip $(mk_$1))' '$(origin $1)' '$($(1)_doc)' )"
+__var_doc = "$(shell printf '%-20s %-40s by %-12s  %s\\n' '$1' '$(strip $(mk_$1))' '$(origin $1)' '$($(1)_doc)' )"
 __var_tab = $(foreach v,$(sort $(mk_PARAMETERS)),$(call __var_doc,$v))
 
 __tgt_doc = "$(shell printf '%-10s %s\\n' '$1' '$($(1)_doc)')"

@@ -9,13 +9,7 @@ mk_OUTPUT_DIRS  += $(FC_MOD_DIR)
 
 mk_FC_list      += gfortran ifort
 mk_ARCH_list    += 32 64
-
-cmd_COMPILE.f    = $(__fc_cmd_compile)
-cmd_COMPILE.f90  = $(__fc_cmd_compile)
-cmd_COMPILE.f95  = $(__fc_cmd_compile)
-cmd_COMPILE.for  = $(__fc_cmd_compile)
-cmd_LINK.fc      = $(__fc_cmd_link.$(mk_BUILD_MODE))
-cmd_LINK        ?= $(cmd_LINK.fc)#  < proposed linker command
+cmd_LINK        ?= $(__fc_cmd_link.$(mk_OUT_TYPE))#  < proposed linker command
 
 #-- user parameters --
 
@@ -179,4 +173,17 @@ __fc_cmd_link.static = ar rs $(mk_OUT_FILE) $(__fc_link_objects) && $(__fc_copy_
 
 __fc_copy_mods       = cp $(mk_FC_MOD_DIR)/*.mod $(mk_OUT_DIR) 2> /dev/null || :
 __fc_symlnk_so       = ln -sf $(mk_OUT_FILE_NAME_SO) $(mk_OUT_FILE)$(mk_MAYOR) && ln -sf $(mk_OUT_FILE_NAME)$(mk_MAYOR) $(mk_OUT_FILE)
+
+
+$(mk_BUILD_DIR)/%.o: %.f95
+	$(call mk_logged_cmd,$(__fc_cmd_compile))
+
+$(mk_BUILD_DIR)/%.o: %.f90
+	$(call mk_logged_cmd,$(__fc_cmd_compile))
+
+$(mk_BUILD_DIR)/%.o: %.for
+	$(call mk_logged_cmd,$(__fc_cmd_compile))
+
+$(mk_BUILD_DIR)/%.o: %.f
+	$(call mk_logged_cmd,$(__fc_cmd_compile))
 

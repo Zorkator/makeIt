@@ -7,8 +7,9 @@ mk_TARGETS      += clean $(mk_CFG_list)
 mk_FILE_TYPES   += 
 mk_OUTPUT_DIRS  += $(mk_BUILD_DIR) $(mk_OUT_DIR)
 #mk_SUB_LIBS     += $(__sub_libraries)
-mk_DEPS         := .mk.deps
-cmd_FINALIZE    := @echo '>> done'
+
+DEPS_           ?= .mk.deps
+mk_DEPS          = $(mk_BUILD_DIR)/$(DEPS_)
 
 mk_OUT_TYPE_list   += static shared exe
 mk_ARCH_list       +=
@@ -95,21 +96,16 @@ mk_PKG_LIBRARIES    = $(patsubst %,%.$(mk_TAG),$(notdir $(mk_SUB_PACKAGES)))
 
 #-- targets --
 
-.PHONY: $(mk_TARGETS) default prepare
+.PHONY: $(mk_TARGETS) default depend
 
-default: $(mk_DEPS)
-	$(foreach p,$(mk_SUB_PACKAGES),$(shell $(MAKE) -C $p $(call mk_pkg_args,$p)))
-	$(MAKE) $(mk_OUT_FILE)
-	@rm $(mk_DEPS)
+default: depend
+	# make subpackages here!?
+	@$(MAKE) DEPS_=$(mk_DEPS) $(mk_OUT_FILE)
 
-$(mk_DEPS):
-	#-- evaluate auto-depends
-	$(shell $(mk_echo) 'dep_BUILD_DIR = $(mk_BUILD_DIR)' > $(mk_DEPS))
-	@$(__mk_link_target)
-	@$(__mk_type_rules)
-	#@$(__ mk_object_deps)
-	#@$(__ mk_prio_deps)
-	@python misc/fort_depend.py -o $@ -f $(__source_files) -w
+depend:
+	@#-- evaluate auto-depend
+	@$(MAKE) --quiet $(__source_files) $(dir $(mk_DEPS))
+	@python $(MAKEIT_DIR)/fort_deps.py -a $(mk_DEPS) $(__source_files) --objdir=$(mk_BUILD_DIR)
 	
 
 $(mk_CFG_list):
@@ -130,34 +126,13 @@ __out_file_name_exe    = $(1)
 __out_file_name_of     = $(call __out_file_name_$2,$1)
 __out_file_name        = $(call __out_file_name_of,$(mk_OUT_NAME).$(mk_TAG),$(mk_BUILD_MODE))
 
-__logged_cmd      = @echo $(filter-out ,$(cmd_$1)) $(cmd_LOG) && $(cmd_$1) $(cmd_LOG)
-__tpl_link_tgt    = $(mk_OUT_FILE): $(mk_OBJECTS)\n\t$(call __logged_cmd,LINK)\n\t$(cmd_FINALIZE)
-__tpl_dirs_tgt    = $(mk_OBJECTS): | $(sort $(mk_OUTPUT_DIRS:%=%\/))
-__tpl_rule        = $(dep_BUILD_DIR)/%.o: [d]%.[t]\n\t$(call __logged_cmd,COMPILE.[t])
-__rule_of         = $(subst [d],$1,$(subst [t],$2,$(value __tpl_rule)))
-
-__echo_rule_of    = $(shell $(mk_echo) '$(call __rule_of,$1,$2)' >> $3)
-__echo_obj_dep_of = $(shell echo '$(call mk_object_of,$1): $1' >> $2)
-
-__mk_link_target  = $(shell $(mk_echo) '$(value __tpl_link_tgt)\n$(value __tpl_dirs_tgt)' >> $(mk_DEPS))
-__mk_object_deps  = $(foreach f,$(__source_files),$(call __echo_obj_dep_of,$f,$(mk_DEPS)))
-__mk_type_rules   = $(foreach t,$(mk_FILE_TYPES),$(call __echo_rule_of,,$t,$(mk_DEPS)))
-
 __source_files    = $(filter-out $(mk_IGNORE_FILES),$(mk_SOURCE_FILES))
 __source_dirs     = $(sort $(dir $(__source_files)))
 mk_OBJECTS        = $(call mk_object_of,$(__source_files))
-
-#__mk_head      = $(and $(word 1,$1),$(word 2,$1))
-#__mk_tail      = $(wordlist 2,$(words $1),$1)
-#__mk_pair      = $(call mk_object_of,$(word 2,$1)): $(word 2,$1) $(call mk_object_of,$(word 1,$1))
-#__mk_list      = $(if $(__mk_head),$(shell $(mk_echo) '$(call __mk_list, $(__mk_tail))$(call __mk_pair,$1)' >> $(mk_DEPS)),)
-#__mk_prio_deps = $(call __mk_list,$(mk_PRIO_SOURCE))
-
-#__sub_libraries   = $(foreach p,$(mk_SUB_PACKAGES),lib$(p).$(TAG))
-#__tpl_rule_subpkg = $(OUT_DIR)/[pkg]:\n\t$(MAKE) 
 
 VPATH = $(subst $(mk_SPACE),:,$(__source_dirs))
 
 include $(MAKEIT_DIR)/mk.base
 include $(MAKEIT_DIR)/mk.log
+sinclude $(DEPS_)
 
