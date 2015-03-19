@@ -21,6 +21,7 @@ mk_reverse        = $(if $1,$(call mk_reverse,$(wordlist 2,$(words $1),$1)) $(fi
 mk_defined        = $(patsubst undefined,,$(origin $1))#<                                      mk_defined( varId )                : origin(varId) | ''
 mk_var            = $(if $(call mk_defined,$1),\\$($1),)#<                                     mk_var( varId )                    : \\$(varId) | ''
 mk_map            = $(foreach i,$2,$(call $1,$i))#<                                            mk_map( func, v1 v2 ... )          : res1 res2 ...
+mk_lines          = $(shell $(mk_echo) $1 | wc -l)#<                                           mk_lines( string )                 : num of lines
 
 mk_match          = $(shell [[ $1 == $2 ]] && echo '$(value 3)')#<                             mk_match( text, pattern, res )   : res | ''
 mk_matchRE        = $(shell [[ $1 =~ $2 ]] && echo '$(value 3)')#<                             mk_matchRE( text, re_pattern, res ): res | ''

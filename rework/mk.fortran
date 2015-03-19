@@ -10,6 +10,7 @@ mk_OUTPUT_DIRS  += $(FC_MOD_DIR)
 mk_FC_list      += gfortran ifort
 mk_ARCH_list    += 32 64
 cmd_LINK        ?= $(__fc_cmd_link.$(mk_OUT_TYPE))#  < proposed linker command
+cmd_FC_version   = $(shell $(fc) $(fc_version) 2>&1 | sed -ne 's/\([0-9]\+\.[0-9.]\+\)/\1/p')
 
 #-- user parameters --
 
@@ -79,8 +80,8 @@ fc_mod       = $(__fc_mod_$(mk_FC))#             < directory for module output
 fc_pic       = $(__fc_pic_$(mk_FC))#             < generate position independent code (pic) for shared libraries
 fc_soname    = $(__fc_soname_$(mk_FC))#          < set soname
 fc_lstatic   = $(__fc_lstatic_$(mk_FC))#         < force static linking
+fc_version   = $(__fc_version_$(mk_FC))#         < compiler version string
 
-fc_cflags_of = $(call mk_effective,FC_CFLAGS,$(basename $1))# < get compile flags applied to some source file
 
 #-- targets --
 
@@ -115,6 +116,7 @@ __fc_mod_gfortran     := -J
 __fc_pic_gfortran     := -shared -fpic
 __fc_soname_gfortran  := -Wl,-soname,
 __fc_lstatic_gfortran := -Wl,-static
+__fc_version_gfortran := --version
                       
 __fc_ifort            := ifort
 __fc_c_ifort          := -c
@@ -144,6 +146,7 @@ __fc_mod_ifort        := -module
 __fc_pic_ifort        := -shared -fpic
 __fc_soname_ifort     := -Wl,-soname=
 __fc_lstatic_ifort    := -Wl,-Bstatic
+__fc_version_ifort    := -V
 
 #-- derive private flaglists --
 

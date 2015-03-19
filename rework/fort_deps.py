@@ -46,11 +46,11 @@ class DepsCrawler(object):
 			for line in stream.readlines():
 				use = self._scanUse( line )
 				if use:
-					uses.add( use.groups()[0] )
+					uses.add( use.groups()[0].lower() )
 				else:
 					mod = self._scanMod( line )
 					if mod:
-						self._modTab[ mod.groups()[0] ] = fileName
+						self._modTab[ mod.groups()[0].lower() ] = fileName
 
 
 	def _obj( self, fileName ):

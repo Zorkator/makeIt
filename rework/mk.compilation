@@ -29,14 +29,15 @@ any_source          = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
 any_source_in       = $(foreach t,$(mk_FILE_TYPES),$(wildcard $(1)/*.$(t)))
 scan_source         = $(foreach d,$(mk_SOURCE_DIRS),$(call any_source_in,$d))
 svn_revision       := $(shell svn info | sed -ne 's/^Revision: //p')
-svn_status         := $(shell svn st | grep "^M " | awk '{print $$NF}')
+svn_modified       := $(shell svn st | grep "^M " | awk '{print $$NF}')
+svn_modified_tab    = $(call mk_join,\\\n,$(svn_modified))
 
 
 #-- user parameters --
 
 CONFIGURATIONS     ?= debug release
-debug_doc          ?= target for building with debug options
-release_doc        ?= target for building with optimization and without debug options
+debug_doc          ?= shortcut target for building with debug options. Equivalent to: "make built CFG=debug"
+release_doc        ?= shortcut target for building with optimization and without debug options. Equivalent to: "make built CFG=release"
 
 ARCH               ?= $(firstword $(mk_ARCH_list))
 ARCH_doc           ?= architecture id: {$(call mk_csv,$(mk_ARCH_list))}
@@ -56,7 +57,7 @@ mk_BUILD_MODE       = $(call mk_effective,BUILD_MODE)
 
 BUILD_DIR          ?= $(mk_TAG).$(mk_BUILD_MODE)
 BUILD_DIR_doc      ?= working directory for building object files. default: <TAG>.<BUILD_MODE>
-mk_BUILD_DIR        = $(call mk_effective,BUILD_DIR)
+mk_BUILD_DIR        = built/$(call mk_effective,BUILD_DIR)
 
 OUT_TYPE           ?= $(firstword $(mk_OUT_TYPE_list))
 OUT_TYPE_doc       ?= type of built binary: {$(call mk_csv,$(mk_OUT_TYPE_list))}
@@ -88,34 +89,38 @@ MINOR              ?= $(svn_revision)
 MINOR_doc          ?= minor version number, e.g. svn revision
 mk_MINOR            = $(if $(MINOR),.$(MINOR),)
 
-SOURCE_FILES       ?= $(scan_source)
+SOURCE_FILES       += $(scan_source)
 mk_SOURCE_DIRS      = $(call mk_effective,SOURCE_DIRS)
 mk_SOURCE_FILES     = $(call mk_effective,SOURCE_FILES)
 mk_IGNORE_FILES     = $(call mk_effective,IGNORE_FILES)
 mk_SUB_PACKAGES     = $(call mk_effective,SUB_PACKAGES)
 mk_PKG_LIBRARIES    = $(patsubst %,%.$(mk_TAG),$(notdir $(mk_SUB_PACKAGES)))
 
-mk_BINARY_TAG       = $(subst [br],\\\n,$(call mk_effective,BINARY_TAG))
-mk_BINARY_TAG_lines = $(shell echo $(mk_BINARY_TAG) | wc -l)
-mk_BINARY_TAG_frame = '$(mk_BINARY_TAG)\n' \
-                      'tail -$(mk_BINARY_TAG_lines)'
+mk_BINARY_TAG       = $(call mk_effective,BINARY_TAG)
+mk_BINARY_TAG_len   = $(call mk_lines,$(mk_BINARY_TAG))
+mk_BINARY_TAG_frame = $(if $(mk_BINARY_TAG), \
+                           '\n'$(mk_BINARY_TAG)                     '\n' \
+                           'tail -$(call plus,$(mk_BINARY_TAG_len),2)\n' \
+                           'head -$(mk_BINARY_TAG_len)',)
+
 
 #-- targets --
 
-.PHONY: $(mk_TARGETS) default depend
+.DEFAULT_GOAL = help
 
-default: depend
+.PHONY: $(mk_TARGETS) built depend
+
+built: depend
 	# make subpackages here!?
-	@$(MAKE) DEPS_=$(mk_DEPS) $(mk_OUT_FILE)
+	@$(MAKE) DEPS_=$(mk_DEPS) OUT_='$(mk_OUT_FILE)' DIRS_='$(mk_OUTPUT_DIRS)' OBJ_='$(mk_OBJECTS)' $(mk_OUT_FILE)
 
 depend:
 	@#-- evaluate auto-depend
 	@$(MAKE) --quiet $(__source_files) $(dir $(mk_DEPS))
-	@python $(MAKEIT_DIR)/fort_deps.py -a $(mk_DEPS) $(__source_files) --objdir=$(mk_BUILD_DIR)
+	@python $(MAKEIT_DIR)/fort_deps.py -o $(mk_DEPS) $(__source_files) --objdir=$(mk_BUILD_DIR)
 	
-
 $(mk_CFG_list):
-	$(MAKE) CFG=$@
+	@$(MAKE) CFG=$@ built
 
 
 clean_doc = clear build directory [$(mk_BUILD_DIR)] by removing object files
@@ -124,13 +129,22 @@ clean:
 	@$(foreach p,$(mk_SUB_PACKAGES),$(shell $(MAKE) -C $p $(call mk_pkg_args,$p) clean))
 
 
+$(OUT_): $(OBJ_)
+	$(call mk_logged_cmd,$(cmd_LINK))
+	@$(mk_echo) tagging binary ...
+	@$(mk_echo) -n $(mk_BINARY_TAG_frame) >> $(OUT_)
+	@$(mk_echo) built successful
+
+$(OBJ_): | $(sort $(DIRS_:%=%\/))
+
+
 #-- set/derive private variables/lists --
 
 __out_file_name_static = lib$(1).a
 __out_file_name_shared = lib$(1).so
 __out_file_name_exe    = $(1)
 __out_file_name_of     = $(call __out_file_name_$2,$1)
-__out_file_name        = $(call __out_file_name_of,$(mk_OUT_NAME).$(mk_TAG),$(mk_BUILD_MODE))
+__out_file_name        = $(call __out_file_name_of,$(mk_OUT_NAME).$(mk_TAG),$(mk_OUT_TYPE))
 
 __source_files    = $(filter-out $(mk_IGNORE_FILES),$(mk_SOURCE_FILES))
 __source_dirs     = $(sort $(dir $(__source_files)))
@@ -138,6 +152,7 @@ mk_OBJECTS        = $(call mk_object_of,$(__source_files))
 
 VPATH = $(subst $(mk_SPACE),:,$(__source_dirs))
 
+sinclude $(MAKEIT_DIR)/gmsl-1.1.7/gmsl
 include $(MAKEIT_DIR)/mk.base
 include $(MAKEIT_DIR)/mk.log
 sinclude $(DEPS_)
