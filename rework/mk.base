@@ -10,14 +10,17 @@ mk_COMMA      := ,
 mk_DOLLAR     := $$
 mk_ANY        := %
 
-mk_echo          := echo -e
+mk_echo          := /bin/echo -e
 mk_lower          = $(shell echo $(1) | tr A-Z a-z)#<                                          mk_lower( sTriNg )                 : string
 mk_upper          = $(shell echo $(1) | tr a-z A-Z)#<                                          mk_upper( sTriNg )                 : STRING
 mk_csv            = $(subst $(mk_SPACE),$(mk_COMMA),$(strip $1))#<                             mk_csv( v1 v2 ... )                : v1,v2,...
+mk_lsv            = $(subst $(mk_SPACE),\\n,$(strip $1))#<                                     mk_lsv( v1 v2 ... )                : 'v1\nv2\n...'
+mk_join           = $(subst $(mk_SPACE),$1,$(strip $2))#<                                      mk_join( S, v1 v2 ... )            : 'v1Sv2S...'
 mk_ssv            = $(subst $(mk_COMMA),$(mk_SPACE),$(strip $1))#<                             mk_ssv( 'v1,v2,...' )              : 'v1 v2 ...'
 mk_reverse        = $(if $1,$(call mk_reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))#< mk_reverse( v1 v2 ... )            : ... v2 v1
 mk_defined        = $(patsubst undefined,,$(origin $1))#<                                      mk_defined( varId )                : origin(varId) | ''
 mk_var            = $(if $(call mk_defined,$1),\\$($1),)#<                                     mk_var( varId )                    : \\$(varId) | ''
+mk_map            = $(foreach i,$2,$(call $1,$i))#<                                            mk_map( func, v1 v2 ... )          : res1 res2 ...
 
 mk_match          = $(shell [[ $1 == $2 ]] && echo '$(value 3)')#<                             mk_match( text, pattern, res )   : res | ''
 mk_matchRE        = $(shell [[ $1 =~ $2 ]] && echo '$(value 3)')#<                             mk_matchRE( text, re_pattern, res ): res | ''
@@ -28,32 +31,32 @@ mk_patternRE_opts = $(foreach p,$($1),$(call mk_matchRE,$2,$p,$($p)))#<         
 
 help_doc = print overview over supported parameters and targets
 help:
-	@$(mk_echo) \ $(TARGET_doc)
-	@echo == KNOWN TARGETS ==
-	@$(mk_echo) \ $(__tgt_tab)
-	@echo == CURRENT PARAMETERS ==
-	@$(mk_echo) \ $(__var_tab)
+	@$(mk_echo) ' $(TARGET_doc)          \n' \
+              '== KNOWN TARGETS ==     \n' \
+              '$(__tgt_tab)            \n' \
+              '== CURRENT PARAMETERS ==\n' \
+              '$(__var_tab)'
 
 
 help.*_doc = echo value of make variable and specify its origin, e.g. make origin.CFG
 help.%:
-	@echo $* = [$(origin $*)] $($*)
+	@$(mk_echo) $* = [$(origin $*)] $($*)
 
 
 echo.*_doc = evaluate value of make variable 
 echo.%:
-	@echo $($*)
+	@$(mk_echo) $($*)
 
 
 eval.*_doc = evaluate a make variable by calling with argument, e.g. make eval._mkFunc,arg
 __eval     = $(call $(firstword $1),$(wordlist 2,99,$1))
 eval.%:
-	@echo $(call __eval,$(call mk_ssv,$*))
+	@$(mk_echo) $(call __eval,$(call mk_ssv,$*))
 
 
 value.*_doc = show value of make variable
 value.%:
-	@echo '$(value $*)'
+	@$(mk_echo) '$(value $*)'
 
 %/:
 	@mkdir -p $@
@@ -61,9 +64,9 @@ value.%:
 
 #-- private definitions --
 
-__var_doc = "$(shell printf '%-20s %-40s by %-12s  %s\\n' '$1' '$(strip $(mk_$1))' '$(origin $1)' '$($(1)_doc)' )"
-__var_tab = $(foreach v,$(sort $(mk_PARAMETERS)),$(call __var_doc,$v))
+__var_doc = $(shell printf '%-20s %-40s by %-12s  %s\\n' '$1' '$(strip $(mk_$1))' '$(origin $1)' '$($(1)_doc)' )
+__var_tab = $(call mk_map,__var_doc,$(sort $(mk_PARAMETERS)))
 
-__tgt_doc = "$(shell printf '%-10s %s\\n' '$1' '$($(1)_doc)')"
-__tgt_tab = $(foreach t,$(sort $(mk_TARGETS)),$(call __tgt_doc,$t))
+__tgt_doc = $(shell printf '%-10s %s\\n' '$1' '$($(1)_doc)')
+__tgt_tab = $(call mk_map,__tgt_doc,$(sort $(mk_TARGETS)))
 

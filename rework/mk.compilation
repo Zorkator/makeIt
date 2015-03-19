@@ -28,7 +28,8 @@ mk_pkg_args         = CFG=$(mk_CFG) ARCH=$(mk_ARCH) OUT_NAME=$(notdir $1) OUT_DI
 any_source          = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
 any_source_in       = $(foreach t,$(mk_FILE_TYPES),$(wildcard $(1)/*.$(t)))
 scan_source         = $(foreach d,$(mk_SOURCE_DIRS),$(call any_source_in,$d))
-svn_revision       := `svn info | sed -ne 's/^Revision: //p'`
+svn_revision       := $(shell svn info | sed -ne 's/^Revision: //p')
+svn_status         := $(shell svn st | grep "^M " | awk '{print $$NF}')
 
 
 #-- user parameters --
@@ -93,6 +94,11 @@ mk_SOURCE_FILES     = $(call mk_effective,SOURCE_FILES)
 mk_IGNORE_FILES     = $(call mk_effective,IGNORE_FILES)
 mk_SUB_PACKAGES     = $(call mk_effective,SUB_PACKAGES)
 mk_PKG_LIBRARIES    = $(patsubst %,%.$(mk_TAG),$(notdir $(mk_SUB_PACKAGES)))
+
+mk_BINARY_TAG       = $(subst [br],\\\n,$(call mk_effective,BINARY_TAG))
+mk_BINARY_TAG_lines = $(shell echo $(mk_BINARY_TAG) | wc -l)
+mk_BINARY_TAG_frame = '$(mk_BINARY_TAG)\n' \
+                      'tail -$(mk_BINARY_TAG_lines)'
 
 #-- targets --
 
