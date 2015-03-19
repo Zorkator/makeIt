@@ -125,7 +125,7 @@ $(mk_CFG_list):
 
 clean_doc = clear build directory [$(mk_BUILD_DIR)] by removing object files
 clean:
-	@rm -f $(mk_OBJECTS) $(LOG_FILE) $(mk_DEPS)
+	@rm -f $(mk_OBJECTS) $(LOG_FILE) $(mk_DEPS) $(CLEARED_FILES)
 	@$(foreach p,$(mk_SUB_PACKAGES),$(shell $(MAKE) -C $p $(call mk_pkg_args,$p) clean))
 
 

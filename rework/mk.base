@@ -23,10 +23,11 @@ mk_var            = $(if $(call mk_defined,$1),\\$($1),)#<                      
 mk_map            = $(foreach i,$2,$(call $1,$i))#<                                            mk_map( func, v1 v2 ... )          : res1 res2 ...
 mk_lines          = $(shell $(mk_echo) $1 | wc -l)#<                                           mk_lines( string )                 : num of lines
 
-mk_match          = $(shell [[ $1 == $2 ]] && echo '$(value 3)')#<                             mk_match( text, pattern, res )   : res | ''
-mk_matchRE        = $(shell [[ $1 =~ $2 ]] && echo '$(value 3)')#<                             mk_matchRE( text, re_pattern, res ): res | ''
+mk_match          = `case $1 in $2) echo '$(value 3)';; *) ;; esac`#<                          mk_match( text, pattern, res )   : res | ''
+mk_matchRE        = `if expr $1 : $2 > /dev/null; then echo '$(value 3)'; fi`#<                mk_matchRE( text, re_pattern, res ): res | ''
 mk_pattern_opts   = $(foreach p,$($1),$(call mk_match,$2,$p,$($p)))#<                          mk_pattern_opts( PATTERN_list, text )
 mk_patternRE_opts = $(foreach p,$($1),$(call mk_matchRE,$2,$p,$($p)))#<                        mk_patternRE_opts( PATTERN_RE_list, text )
+
 
 #-- targets --
 
