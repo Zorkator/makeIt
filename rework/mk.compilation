@@ -1,9 +1,9 @@
 
 #-- set/modify public definitions --
 
-mk_PARAMETERS   += BUILD_MODE CFG ARCH TAG BUILD_DIR OUT_TYPE OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE
+mk_PARAMETERS   += BUILD_MODE CFG ARCH TAG BUILD_DIR OUT_TYPE OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE OUT_UMASK
 mk_TAG_CLASSES  += BUILD_MODE CFG ARCH
-mk_TARGETS      += clean $(mk_CFG_list)
+mk_TARGET_list  += depend clean $(TARGETS)
 mk_FILE_TYPES   += 
 mk_OUTPUT_DIRS  += $(mk_BUILD_DIR) $(mk_OUT_DIR)
 #mk_SUB_LIBS     += $(__sub_libraries)
@@ -20,7 +20,7 @@ mk_TAG_list         = $(filter-out BUILD_MODE,$(mk_TAG_CLASSES))
 mk_TAG_CLASS_list   = $(sort $(mk_TAG_CLASSES) mk_ANY)
 
 mk_tagged           = $(subst \\, ,$(strip $(foreach c,$(mk_TAG_CLASS_list),$(call mk_var,$1.$($c)))))
-mk_effective        = $(or $(call mk_tagged,$(notdir $2)),$(call mk_tagged,$1),$($1))
+mk_effective        = $(strip $(or $(call mk_tagged,$(notdir $2)),$(call mk_tagged,$1),$($1)))
 mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patternRE_opts,mk_FILE_PATTERNS_RE,$1)
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
 mk_pkg_args         = CFG=$(mk_CFG) ARCH=$(mk_ARCH) OUT_NAME=$(notdir $1) OUT_DIR="$(abspath $(mk_BUILD_DIR))"
@@ -81,6 +81,9 @@ OUT_FILE_doc       ?= path and file name of the final result
 mk_OUT_FILE         = $(call mk_effective,OUT_FILE)
 mk_OUT_FILE_SO      = $(call mk_effective,OUT_FILE)$(mk_MAYOR)$(mk_MINOR)
 
+OUT_UMASK_doc      ?= the umask to set for the final output file
+mk_OUT_UMASK        = $(call mk_effective,OUT_UMASK)
+
 MAYOR              ?= 0
 MAYOR_doc          ?= mayor version number
 mk_MAYOR            = $(if $(MAYOR),.$(MAYOR),)
@@ -98,45 +101,50 @@ mk_PKG_LIBRARIES    = $(patsubst %,%.$(mk_TAG),$(notdir $(mk_SUB_PACKAGES)))
 
 mk_BINARY_TAG       = $(call mk_effective,BINARY_TAG)
 mk_BINARY_TAG_len   = $(call mk_lines,$(mk_BINARY_TAG))
-mk_BINARY_TAG_frame = $(if $(mk_BINARY_TAG), \
-                           '\n'$(mk_BINARY_TAG)                     '\n' \
-                           'tail -$(call plus,$(mk_BINARY_TAG_len),2)\n' \
-                           'head -$(mk_BINARY_TAG_len)',)
+mk_BINARY_TAG_frame = $(if $(mk_BINARY_TAG),\
+                           \n $(mk_BINARY_TAG)                       \n\
+                           tail -$(call plus,$(mk_BINARY_TAG_len),2) \n\
+                           head -$(mk_BINARY_TAG_len)\n,)
 
 
 #-- targets --
 
 .DEFAULT_GOAL = help
+.DELETE_ON_ERROR:
 
-.PHONY: $(mk_TARGETS) built depend
+.PHONY: $(mk_TARGET_list) $(mk_CFG_list) built depend
 
 built: depend
 	# make subpackages here!?
 	@$(MAKE) DEPS_=$(mk_DEPS) OUT_='$(mk_OUT_FILE)' DIRS_='$(mk_OUTPUT_DIRS)' OBJ_='$(mk_OBJECTS)' $(mk_OUT_FILE)
 
+depend_doc = build dependency list in $(mk_DEPS)
 depend:
 	@#-- evaluate auto-depend
 	@$(MAKE) --quiet $(__source_files) $(dir $(mk_DEPS))
+	@$(mk_echo) '=====\nstarted build @ '`date`'\n=====' > $(mk_LOG_FILE)
 	@python $(MAKEIT_DIR)/fort_deps.py -o $(mk_DEPS) $(__source_files) --objdir=$(mk_BUILD_DIR)
-	
-$(mk_CFG_list):
-	@$(MAKE) CFG=$@ built
-
-
-clean_doc = clear build directory [$(mk_BUILD_DIR)] by removing object files
-clean:
-	@rm -f $(mk_OBJECTS) $(LOG_FILE) $(mk_DEPS) $(CLEARED_FILES)
-	@$(foreach p,$(mk_SUB_PACKAGES),$(shell $(MAKE) -C $p $(call mk_pkg_args,$p) clean))
-
 
 $(OUT_): $(OBJ_)
 	$(call mk_logged_cmd,$(cmd_LINK))
-	@$(mk_echo) tagging binary ...
-	@$(mk_echo) -n $(mk_BINARY_TAG_frame) >> $(OUT_)
-	@$(mk_echo) built successful
-
+	@if [ -e "$(OUT_)" ]; then                                 \
+		$(mk_echo) tagging binary ...                           ;\
+		$(mk_echo) -n '$(mk_BINARY_TAG_frame)' | tee -a $(OUT_) ;\
+		$(mk_echo) \\nbuilt successful                          ;\
+		if [ -n "$(mk_OUT_UMASK)" ]; then                        \
+			chmod $(mk_OUT_UMASK) $(OUT_)                         ;\
+		fi                                                      ;\
+	fi
+	
 $(OBJ_): | $(sort $(DIRS_:%=%\/))
 
+$(mk_CFG_list):
+	@$(MAKE) CFG=$@ built
+
+clean_doc = clear build directory [$(mk_BUILD_DIR)] by removing object files
+clean:
+	@rm -f $(mk_OBJECTS) $(mk_LOG_FILE) $(mk_DEPS) $(CLEARED_FILES)
+	@$(foreach p,$(mk_SUB_PACKAGES),$(shell $(MAKE) -C $p $(call mk_pkg_args,$p) clean))
 
 #-- set/derive private variables/lists --
 

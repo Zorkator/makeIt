@@ -1,8 +1,9 @@
 
 #-- set/modify public definitions --
 
-mk_PARAMETERS += 
-mk_TARGETS    += help echo.* eval.* value.*
+mk_PARAMETERS  += 
+mk_CFG_list    +=
+mk_TARGET_list += help echo.* eval.* value.*
 
 mk_NULL       :=
 mk_SPACE      := $(mk_NULL) #
@@ -21,7 +22,7 @@ mk_reverse        = $(if $1,$(call mk_reverse,$(wordlist 2,$(words $1),$1)) $(fi
 mk_defined        = $(patsubst undefined,,$(origin $1))#<                                      mk_defined( varId )                : origin(varId) | ''
 mk_var            = $(if $(call mk_defined,$1),\\$($1),)#<                                     mk_var( varId )                    : \\$(varId) | ''
 mk_map            = $(foreach i,$2,$(call $1,$i))#<                                            mk_map( func, v1 v2 ... )          : res1 res2 ...
-mk_lines          = $(shell $(mk_echo) $1 | wc -l)#<                                           mk_lines( string )                 : num of lines
+mk_lines          = $(shell $(mk_echo) "$1" | wc -l)#<                                         mk_lines( string )                 : num of lines
 
 mk_match          = `case $1 in $2) echo '$(value 3)';; *) ;; esac`#<                          mk_match( text, pattern, res )   : res | ''
 mk_matchRE        = `if expr $1 : $2 > /dev/null; then echo '$(value 3)'; fi`#<                mk_matchRE( text, re_pattern, res ): res | ''
@@ -33,10 +34,12 @@ mk_patternRE_opts = $(foreach p,$($1),$(call mk_matchRE,$2,$p,$($p)))#<         
 
 help_doc = print overview over supported parameters and targets
 help:
-	@$(mk_echo) ' $(TARGET_doc)          \n' \
-              '== KNOWN TARGETS ==     \n' \
-              '$(__tgt_tab)            \n' \
-              '== CURRENT PARAMETERS ==\n' \
+	@$(mk_echo) ' $(TARGET_doc)             \n' \
+              '== KNOWN CONFIGURATIONS == \n' \
+              '$(__cfg_tab)               \n' \
+              '== OTHER TARGETS ==        \n' \
+              '$(__tgt_tab)               \n' \
+              '== CURRENT PARAMETERS ==   \n' \
               '$(__var_tab)'
 
 
@@ -47,18 +50,18 @@ help.%:
 
 echo.*_doc = evaluate value of make variable 
 echo.%:
-	@$(mk_echo) $($*)
+	@$(mk_echo) "$(subst \n,\\n,$($*))"
 
 
 eval.*_doc = evaluate a make variable by calling with argument, e.g. make eval._mkFunc,arg
 __eval     = $(call $(firstword $1),$(wordlist 2,99,$1))
 eval.%:
-	@$(mk_echo) $(call __eval,$(call mk_ssv,$*))
+	@$(mk_echo) '$(subst \n,\\n,$(call __eval,$(call mk_ssv,$*)))'
 
 
 value.*_doc = show value of make variable
 value.%:
-	@$(mk_echo) '$(value $*)'
+	@$(mk_echo) '$(subst \n,\\\\n,$(value $*))'
 
 %/:
 	@mkdir -p $@
@@ -66,9 +69,10 @@ value.%:
 
 #-- private definitions --
 
-__var_doc = $(shell printf '%-20s %-40s by %-12s  %s\\n' '$1' '$(strip $(mk_$1))' '$(origin $1)' '$($(1)_doc)' )
+__var_doc = $(shell printf '%-16s %-40s %-12s  %s\\n' '$1' '$(strip $(mk_$1))' '$(origin $1)' '$($(1)_doc)' )
 __var_tab = $(call mk_map,__var_doc,$(sort $(mk_PARAMETERS)))
 
 __tgt_doc = $(shell printf '%-10s %s\\n' '$1' '$($(1)_doc)')
-__tgt_tab = $(call mk_map,__tgt_doc,$(sort $(mk_TARGETS)))
+__tgt_tab = $(call mk_map,__tgt_doc,$(sort $(mk_TARGET_list)))
+__cfg_tab = $(call mk_map,__tgt_doc,$(sort $(mk_CFG_list)))
 
