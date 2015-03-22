@@ -1,4 +1,9 @@
 
+ifndef __mk_fortran_included
+
+include $(dir $(lastword $(MAKEFILE_LIST)))mk.compilation
+
+
 #-- set/modify public definitions --
 
 mk_PARAMETERS   += FC FC_MOD_DIR FC_PP_DEFINES FC_INCLUDE_DIRS FC_FLAGS FC_CFLAGS FC_LFLAGS FC_LIBRARY_DIRS FC_LIBRARIES FC_LINK_OTHER
@@ -189,4 +194,6 @@ $(mk_BUILD_DIR)/%.o: %.for
 
 $(mk_BUILD_DIR)/%.o: %.f
 	$(call mk_logged_cmd,$(__fc_cmd_compile))
+
+endif # __mk_fortran_included
 

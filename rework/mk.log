@@ -1,4 +1,6 @@
 
+ifndef __mk_log_included
+
 mk_PARAMETERS += LOG LOG_FILE
 mk_logged_cmd  = @echo $1 $(__log) && $1 $(__log)
 
@@ -18,4 +20,6 @@ mk_LOG_FILE   = $(LOG_FILE)
 __log_on  = 2>&1 | tee -a $(mk_LOG_FILE)
 __log_off =
 __log     = $(__log_$(mk_LOG))
+
+endif # __mk_log_included
 

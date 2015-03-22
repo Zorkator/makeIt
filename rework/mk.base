@@ -1,4 +1,12 @@
 
+ifndef __mk_base_included
+
+__mk_root := $(dir $(lastword $(MAKEFILE_LIST)))
+
+include  $(__mk_root)mk.log
+sinclude $(__mk_root)gmsl/gmsl
+
+
 #-- set/modify public definitions --
 
 mk_PARAMETERS  += 
@@ -24,8 +32,8 @@ mk_var            = $(if $(call mk_defined,$1),\\$($1),)#<                      
 mk_map            = $(foreach i,$2,$(call $1,$i))#<                                            mk_map( func, v1 v2 ... )          : res1 res2 ...
 mk_lines          = $(shell $(mk_echo) "$1" | wc -l)#<                                         mk_lines( string )                 : num of lines
 
-mk_match          = `case $1 in $2) echo '$(value 3)';; *) ;; esac`#<                          mk_match( text, pattern, res )   : res | ''
-mk_matchRE        = `if expr $1 : $2 > /dev/null; then echo '$(value 3)'; fi`#<                mk_matchRE( text, re_pattern, res ): res | ''
+mk_match          = ${shell case $1 in $2) echo '$(value 3)';; *) ;; esac}#<                   mk_match( text, pattern, res )   : res | ''
+mk_matchRE        = ${shell if expr $1 : $2 > /dev/null; then echo '$(value 3)'; fi}#<         mk_matchRE( text, re_pattern, res ): res | ''
 mk_pattern_opts   = $(foreach p,$($1),$(call mk_match,$2,$p,$($p)))#<                          mk_pattern_opts( PATTERN_list, text )
 mk_patternRE_opts = $(foreach p,$($1),$(call mk_matchRE,$2,$p,$($p)))#<                        mk_patternRE_opts( PATTERN_RE_list, text )
 
@@ -75,4 +83,6 @@ __var_tab = $(call mk_map,__var_doc,$(sort $(mk_PARAMETERS)))
 __tgt_doc = $(shell printf '%-10s %s\\n' '$1' '$($(1)_doc)')
 __tgt_tab = $(call mk_map,__tgt_doc,$(sort $(mk_TARGET_list)))
 __cfg_tab = $(call mk_map,__tgt_doc,$(sort $(mk_CFG_list)))
+
+endif # __mk_base_included
 

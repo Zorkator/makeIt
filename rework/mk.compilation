@@ -1,4 +1,9 @@
 
+ifndef __mk_compilation_included
+
+include $(dir $(lastword $(MAKEFILE_LIST)))mk.base
+
+
 #-- set/modify public definitions --
 
 mk_PARAMETERS   += BUILD_MODE CFG ARCH TAG BUILD_DIR OUT_TYPE OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE OUT_UMASK
@@ -123,7 +128,7 @@ depend:
 	@#-- evaluate auto-depend
 	@$(MAKE) --quiet $(__source_files) $(dir $(mk_DEPS))
 	@$(mk_echo) '=====\nstarted build @ '`date`'\n=====' > $(mk_LOG_FILE)
-	@python $(MAKEIT_DIR)/fort_deps.py -o $(mk_DEPS) $(__source_files) --objdir=$(mk_BUILD_DIR)
+	@python $(__mk_root)fort_deps.py -o $(mk_DEPS) $(__source_files) --objdir=$(mk_BUILD_DIR)
 
 $(OUT_): $(OBJ_)
 	$(call mk_logged_cmd,$(cmd_LINK))
@@ -160,8 +165,7 @@ mk_OBJECTS        = $(call mk_object_of,$(__source_files))
 
 VPATH = $(subst $(mk_SPACE),:,$(__source_dirs))
 
-sinclude $(MAKEIT_DIR)/gmsl-1.1.7/gmsl
-include $(MAKEIT_DIR)/mk.base
-include $(MAKEIT_DIR)/mk.log
 sinclude $(DEPS_)
+
+endif # __mk_compilation_included
 
