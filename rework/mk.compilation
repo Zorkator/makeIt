@@ -1,5 +1,6 @@
 
 ifndef __mk_compilation_included
+__mk_compilation_included := true
 
 include $(dir $(lastword $(MAKEFILE_LIST)))mk.base
 
@@ -128,7 +129,7 @@ depend:
 	@#-- evaluate auto-depend
 	@$(MAKE) --quiet $(__source_files) $(dir $(mk_DEPS))
 	@$(mk_echo) '=====\nstarted build @ '`date`'\n=====' > $(mk_LOG_FILE)
-	@python $(__mk_root)fort_deps.py -o $(mk_DEPS) $(__source_files) --objdir=$(mk_BUILD_DIR)
+	$(foreach cmd,$(cmd_depends),$(call $(cmd),$(mk_DEPS),$(__source_files)))
 
 $(OUT_): $(OBJ_)
 	$(call mk_logged_cmd,$(cmd_LINK))

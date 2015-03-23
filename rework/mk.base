@@ -1,5 +1,6 @@
 
 ifndef __mk_base_included
+__mk_base_included := true
 
 __mk_root := $(dir $(lastword $(MAKEFILE_LIST)))
 

@@ -1,5 +1,6 @@
 
 ifndef __mk_log_included
+__mk_log_included := true
 
 mk_PARAMETERS += LOG LOG_FILE
 mk_logged_cmd  = @echo $1 $(__log) && $1 $(__log)
