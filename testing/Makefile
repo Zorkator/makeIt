@@ -1,11 +1,6 @@
 
-TARGET_doc = Some project for\\n testing make files
+TARGET_doc = Some project for\n testing make files
 SOURCE_FILES         = $(call any_source) $(call any_source_in,sub) $(call any_source_in,../../../libfortres/include/fortran)
-#IGNORE_FILES.32     = func1.f90
-#IGNORE_FILES.64     = func2.f90
-#IGNORE_FILES.%      = testinger.f90
-#IGNORE_FILES.static = testinger.for
-#SUB_DIRS = sub
 
 FC_PP_DEFINES     =
 FC_INCLUDE_DIRS   = #../../../libadt/include
@@ -23,8 +18,5 @@ FC_LIBRARIES      =
 FC_LFLAGS         =
 FC_LINK_INPUT     =
 
-MAKEIT_DIR = ../
-include $(MAKEIT_DIR)/mk.compilation
-include $(MAKEIT_DIR)/mk.fortran
-sinclude $(mk_DEPS)
+include ../mk.fortran
 
