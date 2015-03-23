@@ -7,18 +7,19 @@ include $(dir $(lastword $(MAKEFILE_LIST)))mk.compilation
 
 #-- set/modify public definitions --
 
-mk_PARAMETERS   += FC FC_MOD_DIR FC_PP_DEFINES FC_INCLUDE_DIRS FC_FLAGS FC_CFLAGS FC_LFLAGS FC_LIBRARY_DIRS FC_LIBRARIES FC_LINK_OTHER
-mk_TAG_CLASSES  += FC
-mk_TARGETS      += fpp.*
-mk_FILE_TYPES   += f95 f90 for f
-mk_OUTPUT_DIRS  += $(FC_MOD_DIR)
+mk_PARAMETERS    += FC FC_MOD_DIR FC_PP_DEFINES FC_INCLUDE_DIRS FC_FLAGS FC_CFLAGS FC_LFLAGS FC_LIBRARY_DIRS FC_LIBRARIES FC_LINK_OTHER
+mk_TAG_CLASSES   += FC
+mk_TARGETS       += fpp.*
+mk_FILE_TYPES    += f95 f90 for f
+mk_OUTPUT_DIRS   += $(FC_MOD_DIR)
+mk_CLEARED_FILES += $(mk_BUILD_DIR)/*.o $(mk_BUILD_DIR)/*.mod
 
-mk_FC_list      += gfortran ifort
-mk_ARCH_list    += 32 64
-cmd_LINK        ?= $(__fc_cmd_link.$(mk_OUT_TYPE))#  < proposed linker command
-cmd_FC_version   = $(shell $(fc) $(fc_version) 2>&1 | sed -ne 's/\([0-9]\+\.[0-9.]\+\)/\1/p')
-cmd_FC_depends   = python $(__mk_root)fort_deps.py -o $1 $2 --objdir=$(mk_BUILD_DIR)
-cmd_depends     += cmd_FC_depends
+mk_FC_list       += gfortran ifort
+mk_ARCH_list     += 32 64
+cmd_LINK         ?= $(__fc_cmd_link.$(mk_OUT_TYPE))#  < proposed linker command
+cmd_FC_version    = $(shell $(fc) $(fc_version) 2>&1 | sed -ne 's/\([0-9]\+\.[0-9.]\+\)/\1/p')
+cmd_FC_depends    = python $(__mk_root)fort_deps.py -o $1 $2 --objdir=$(mk_BUILD_DIR)
+cmd_depends      += cmd_FC_depends
 
 #-- user parameters --
 
