@@ -43,7 +43,7 @@ mk_patternRE_opts = $(foreach p,$($1),$(call mk_matchRE,$2,$p,$($p)))#<         
 
 help_doc = print overview over supported parameters and targets
 help:
-	@$(mk_echo) ' $(TARGET_doc)             \n' \
+	@$(mk_echo) ' $(TARGET_doc)           \n\n' \
               '== KNOWN CONFIGURATIONS == \n' \
               '$(__cfg_tab)               \n' \
               '== OTHER TARGETS ==        \n' \

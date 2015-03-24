@@ -63,6 +63,7 @@ FC_PP_DEFINES       ?=
 FC_PP_DEFINES_doc   ?= list of fortran preprocessor defines
 mk_FC_PP_DEFINES     = $(call mk_effective,FC_PP_DEFINES)
 
+
 #-- exposed compiler switches --
 
 fc           = $(__fc_$(mk_FC))#                 < compiler call
@@ -84,11 +85,12 @@ fc_E         = $(__fc_E_$(mk_FC))#               < preprocess only - implies fc_
 fc_D         = $(__fc_D_$(mk_FC))#               < define preprocessor symbol
 fc_I         = $(__fc_I_$(mk_FC))#               < include directory
 fc_L         = $(__fc_L_$(mk_FC))#               < link directory
-fc_l         = $(__fc_l_$(mk_FC))#               < link libraray
+fc_l         = $(__fc_l_$(mk_FC))#               < link library
 fc_mod       = $(__fc_mod_$(mk_FC))#             < directory for module output
 fc_pic       = $(__fc_pic_$(mk_FC))#             < generate position independent code (pic) for shared libraries
 fc_soname    = $(__fc_soname_$(mk_FC))#          < set soname
-fc_lstatic   = $(__fc_lstatic_$(mk_FC))#         < force static linking
+fc_static   = $(__fc_static_$(mk_FC))#           < force static linking
+fc_rpath    = $(__fc_rpath_$(mk_FC))#            < burn library path
 fc_version   = $(__fc_version_$(mk_FC))#         < compiler version string
 
 
@@ -124,7 +126,8 @@ __fc_l_gfortran       := -l
 __fc_mod_gfortran     := -J
 __fc_pic_gfortran     := -shared -fpic
 __fc_soname_gfortran  := -Wl,-soname,
-__fc_lstatic_gfortran := -Wl,-static
+__fc_static_gfortran  := -Wl,-static
+__fc_rpath_gfortran   := -Wl,-rpath,
 __fc_version_gfortran := --version
                       
 __fc_ifort            := ifort
@@ -154,7 +157,8 @@ __fc_l_ifort          := -l
 __fc_mod_ifort        := -module
 __fc_pic_ifort        := -shared -fpic
 __fc_soname_ifort     := -Wl,-soname=
-__fc_lstatic_ifort    := -Wl,-Bstatic
+__fc_static_ifort     := -Wl,-Bstatic
+__fc_rpath_ifort      := -Wl,-rpath=
 __fc_version_ifort    := -V
 
 #-- derive private flaglists --
@@ -171,7 +175,7 @@ __fc_cflags          = $(__fc_include_dirs) $(__fc_pp_defines) $(__fc_flags) $(c
 __fc_fpp__           = $(fc) $(fc_E) $(call __fc_cflags,$1)
 
 __fc_library_dirs    = $(patsubst %,$(fc_L)%,$(mk_OUT_DIR) $(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS))
-__fc_libraries       = $(patsubst %,$(fc_l)%,$(mk_PKG_LIBRARIES) $(mk_FC_LIBRARIES))
+__fc_libraries       = $(patsubst %,$(fc_l)%,$(mk_FC_LIBRARIES))
 __fc_lflags.shared   = $(fc_soname)$(mk_OUT_FILE_NAME)$(mk_MAYOR)
 __fc_lflags          = $(mk_FC_LFLAGS) $(__fc_flags) $(__fc_lflags.$(mk_BUILD_MODE)) $(__fc_library_dirs)
 __fc_link_objects    = $(sort $(mk_OBJECTS))
@@ -179,12 +183,13 @@ __fc_link_input      = $(__fc_link_objects) $(mk_FC_LINK_OTHER) $(__fc_libraries
 
 __fc_cmd_compile     = $(fc) $(fc_c) $(call __fc_cflags,$(notdir $*)) $(call mk_fileType_opts,$(notdir $<)) $< $(fc_o) $@
 
-__fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE) $(__fc_link_input)
-__fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_link_input) && $(__fc_symlnk_so) && $(__fc_copy_mods)
-__fc_cmd_link.static = ar rs $(mk_OUT_FILE) $(__fc_link_objects) && $(__fc_copy_mods)
+__fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE) $(__fc_link_input) $(__fc_copy_pkg_libs)
+__fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_link_input) && $(__fc_symlnk_so) && $(__fc_copy_mods) $(__fc_copy_pkg_libs)
+__fc_cmd_link.static = ar rs $(mk_OUT_FILE) $(__fc_link_objects) && $(__fc_copy_mods) $(__fc_copy_pkg_libs)
 
 __fc_copy_mods       = cp $(mk_FC_MOD_DIR)/*[^_].mod $(mk_OUT_DIR) 2> /dev/null || :
 __fc_symlnk_so       = ln -sf $(mk_OUT_FILE_NAME_SO) $(mk_OUT_FILE)$(mk_MAYOR) && ln -sf $(mk_OUT_FILE_NAME)$(mk_MAYOR) $(mk_OUT_FILE)
+__fc_copy_pkg_libs   = $(if $(mk_PKG_LIBRARY_DIRS),&& cp -a $(foreach pkg,$(mk_PKG_LIBRARY_DIRS),$(pkg)/lib*) $(mk_OUT_DIR),)
 
 
 $(mk_BUILD_DIR)/%.o: %.f95

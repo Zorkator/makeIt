@@ -29,7 +29,6 @@ mk_tagged           = $(subst \\, ,$(strip $(foreach c,$(mk_TAG_CLASS_list),$(ca
 mk_effective        = $(strip $(or $(call mk_tagged,$(notdir $2)),$(call mk_tagged,$1),$($1)))
 mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patternRE_opts,mk_FILE_PATTERNS_RE,$1)
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
-mk_pkg_args         = CFG=$(mk_CFG) ARCH=$(mk_ARCH) OUT_NAME=$(notdir $1) OUT_DIR="$(abspath $(mk_BUILD_DIR))"
 
 any_source          = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
 any_source_in       = $(foreach t,$(mk_FILE_TYPES),$(wildcard $(1)/*.$(t)))
@@ -104,9 +103,7 @@ mk_SOURCE_FILES     = $(call mk_effective,SOURCE_FILES)
 mk_IGNORE_FILES     = $(call mk_effective,IGNORE_FILES)
 mk_CLEARED_FILES   += $(CLEARED_FILES)
 
-mk_SUB_PACKAGES     = $(call mk_effective,SUB_PACKAGES)
-mk_PKG_LIBRARIES    = $(patsubst %,%.$(mk_TAG),$(notdir $(mk_SUB_PACKAGES)))
-
+mk_DEPENDS_ON       = $(call mk_effective,DEPENDS_ON)
 mk_BINARY_TAG       = $(call mk_effective,BINARY_TAG)
 mk_BINARY_TAG_len   = $(call mk_lines,$(mk_BINARY_TAG))
 mk_BINARY_TAG_frame = $(if $(mk_BINARY_TAG),\
@@ -125,15 +122,21 @@ mk_BINARY_TAG_frame = $(if $(mk_BINARY_TAG),\
 built_doc = target for starting build process
 built: depend
 	# check subpackages ...
-	@# ^ TODO: integrate built of subpackages
+	@for pkg in `$(mk_echo) '$(call mk_lsv,$(mk_DEPENDS_ON))'`; do   \
+		$(mk_echo) building subpackage $$pkg ...                      ;\
+		$(MAKE) -C $$pkg built                                        ;\
+	done
 	@$(MAKE) DEPS_=$(mk_DEPS) OUT_='$(mk_OUT_FILE)' DIRS_='$(mk_OUTPUT_DIRS)' OBJ_='$(mk_OBJECTS)' $(mk_OUT_FILE)
+
 
 depend_doc = build dependency list in $(mk_DEPS)
 depend:
 	# evaluate dependencies ...
+	@$(if $(__source_files),,$(error missing source files))
 	@$(MAKE) --quiet $(__source_files) $(dir $(mk_DEPS))
 	@$(mk_echo) '=====\nstarted build @ '`date`'\n=====' > $(mk_LOG_FILE)
 	@$(foreach cmd,$(cmd_depends),$(call $(cmd),$(mk_DEPS),$(__source_files)))
+
 
 $(OUT_): $(OBJ_)
 	$(call mk_logged_cmd,$(cmd_LINK))
@@ -148,13 +151,18 @@ $(OUT_): $(OBJ_)
 	
 $(OBJ_): | $(sort $(DIRS_:%=%\/))
 
+
 $(mk_CFG_list):
 	@$(MAKE) CFG=$@ built
+
 
 clean_doc = clear build directory [$(mk_BUILD_DIR)] by removing object files
 clean:
 	@rm -f $(mk_CLEARED_FILES) $(mk_LOG_FILE) $(mk_DEPS)
-	@$(foreach p,$(mk_SUB_PACKAGES),$(shell $(MAKE) -C $p $(call mk_pkg_args,$p) clean))
+	@for pkg in `$(mk_echo) '$(call mk_lsv,$(mk_DEPENDS_ON))'`; do   \
+		$(mk_echo) cleaning subpackage $$pkg ...                      ;\
+		$(MAKE) -C $$pkg clean                                        ;\
+	done
 
 #-- set/derive private variables/lists --
 
