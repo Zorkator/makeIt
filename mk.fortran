@@ -187,7 +187,7 @@ __fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE) $(__fc_link_i
 __fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_link_input) && $(__fc_symlnk_so) && $(__fc_copy_mods) $(__fc_copy_pkg_libs)
 __fc_cmd_link.static = ar rs $(mk_OUT_FILE) $(__fc_link_objects) && $(__fc_copy_mods) $(__fc_copy_pkg_libs)
 
-__fc_copy_mods       = cp $(mk_FC_MOD_DIR)/*[^_].mod $(mk_OUT_DIR) 2> /dev/null || :
+__fc_copy_mods       = cp $(mk_FC_MOD_DIR)/*[!_].mod $(mk_OUT_DIR) 2> /dev/null || :
 __fc_symlnk_so       = ln -sf $(mk_OUT_FILE_NAME_SO) $(mk_OUT_FILE)$(mk_MAYOR) && ln -sf $(mk_OUT_FILE_NAME)$(mk_MAYOR) $(mk_OUT_FILE)
 __fc_copy_pkg_libs   = $(if $(mk_PKG_LIBRARY_DIRS),&& cp -a $(foreach pkg,$(mk_PKG_LIBRARY_DIRS),$(pkg)/lib*) $(mk_OUT_DIR),)
 
