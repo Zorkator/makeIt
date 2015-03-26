@@ -49,11 +49,11 @@ ARCH_doc           ?= architecture id: {$(call mk_csv,$(mk_ARCH_list))}
 mk_ARCH             = $(call mk_effective,ARCH)
 
 CFG                ?= $(firstword $(mk_CFG_list))
-CFG_doc            ?= name of build configuration: {$(call mk_csv,$(mk_CFG_list))}
+CFG_doc            ?= current build configuration: {$(call mk_csv,$(mk_CFG_list))}
 mk_CFG              = $(CFG)
 
 TAG                ?= $(subst $(mk_SPACE),.,$(foreach t,$(mk_TAG_list),$($t)))
-TAG_doc            ?= string for tagging build directory. default: $(subst $(mk_SPACE),.,$(mk_TAG_list))
+TAG_doc            ?= string for tagging build directory.
 mk_TAG              = $(call mk_effective,TAG)
 
 BUILD_MODE         ?= $(mk_OUT_TYPE)
@@ -61,15 +61,15 @@ BUILD_MODE_doc     ?= mode for building object files: {$(call mk_csv,$(mk_OUT_TY
 mk_BUILD_MODE       = $(call mk_effective,BUILD_MODE)
 
 BUILD_DIR          ?= $(mk_TAG).$(mk_BUILD_MODE)
-BUILD_DIR_doc      ?= working directory for building object files. default: <TAG>.<BUILD_MODE>
-mk_BUILD_DIR        = built/$(call mk_effective,BUILD_DIR)
+BUILD_DIR_doc      ?= working directory for building object files.
+mk_BUILD_DIR        = .work/$(call mk_effective,BUILD_DIR)
 
 OUT_TYPE           ?= $(firstword $(mk_OUT_TYPE_list))
 OUT_TYPE_doc       ?= type of built binary: {$(call mk_csv,$(mk_OUT_TYPE_list))}
 mk_OUT_TYPE         = $(OUT_TYPE)# $(call mk_effective,OUT_TYPE)
 
 OUT_DIR            ?= $(mk_BUILD_DIR)
-OUT_DIR_doc        ?= output directory for putting the output file(s)
+OUT_DIR_doc        ?= output directory for effective output file(s)
 mk_OUT_DIR          = $(call mk_effective,OUT_DIR)
 
 OUT_NAME           ?= outname
@@ -143,10 +143,11 @@ $(OUT_): $(OBJ_)
 	@if [ -e "$(OUT_)" ]; then                                 \
 		$(mk_echo) tagging binary ...                           ;\
 		$(mk_echo) -n '$(mk_BINARY_TAG_frame)' | tee -a $(OUT_) ;\
-		$(mk_echo) \\nbuilt successful                          ;\
 		if [ -n "$(mk_OUT_UMASK)" ]; then                        \
 			chmod $(mk_OUT_UMASK) $(OUT_)                         ;\
 		fi                                                      ;\
+		$(mk_echo) \\n=== built successful ===                  ;\
+		$(mk_echo) \\n  $(OUT_) \\n                             ;\
 	fi
 	
 $(OBJ_): | $(sort $(DIRS_:%=%\/))

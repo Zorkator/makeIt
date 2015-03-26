@@ -2,8 +2,9 @@
 ifndef __mk_log_included
 __mk_log_included := true
 
-mk_PARAMETERS += LOG LOG_FILE
-mk_logged_cmd  = @echo $1 $(__log) && $1 $(__log)
+mk_PARAMETERS  += LOG LOG_FILE
+mk_TARGET_list += log
+mk_logged_cmd   = @echo $1 $(__log) && $1 $(__log)
 
 
 #-- parameters ...
@@ -13,8 +14,14 @@ LOG_doc      ?= switch to enable/disable logging {on, off}
 mk_LOG        = $(LOG)
 
 LOG_FILE     ?= $(mk_BUILD_DIR)/_log.txt
-LOG_FILE_doc ?= file for logging build messages. default: <BUILD_DIR>/_log.txt
+LOG_FILE_doc ?= file for logging build messages.
 mk_LOG_FILE   = $(LOG_FILE)
+
+#-- targets ...
+
+log_doc = show the logged command output via less
+log:
+	@less $(mk_LOG_FILE)
 
 #-- definitions for build step logging ...
 

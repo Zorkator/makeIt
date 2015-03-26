@@ -9,13 +9,13 @@ include $(dir $(lastword $(MAKEFILE_LIST)))mk.compilation
 
 mk_PARAMETERS    += FC FC_MOD_DIR FC_PP_DEFINES FC_INCLUDE_DIRS FC_FLAGS FC_CFLAGS FC_LFLAGS FC_LIBRARY_DIRS FC_LIBRARIES FC_LINK_OTHER
 mk_TAG_CLASSES   += FC
-mk_TARGETS       += fpp.*
+mk_TARGET_list   += fpp.*
 mk_FILE_TYPES    += f95 f90 for f
 mk_OUTPUT_DIRS   += $(FC_MOD_DIR)
 mk_CLEARED_FILES += $(mk_BUILD_DIR)/*.o $(mk_BUILD_DIR)/*.mod
 
 mk_FC_list       += gfortran ifort
-mk_ARCH_list     += 32 64
+mk_ARCH_list     += 64 32
 cmd_LINK         ?= $(__fc_cmd_link.$(mk_OUT_TYPE))#  < proposed linker command
 cmd_FC_version    = $(shell $(fc) $(fc_version) 2>&1 | sed -ne 's/\([0-9]\+\.[0-9.]\+\)/\1/p')
 cmd_FC_depends    = python $(__mk_root)fort_deps.py -o $1 $2 --objdir=$(mk_BUILD_DIR)
@@ -40,6 +40,7 @@ FC_INCLUDE_DIRS_doc ?= fortran include directories
 mk_FC_INCLUDE_DIRS   = $(call mk_effective,FC_INCLUDE_DIRS)
 
 FC_LFLAGS           ?= 
+FC_LFLAGS.shared    ?= $(fc_no_undef)
 FC_LFLAGS_doc       ?= fortran link flags, applied to any file
 mk_FC_LFLAGS         = $(call mk_effective,FC_LFLAGS)
 
@@ -89,77 +90,80 @@ fc_l         = $(__fc_l_$(mk_FC))#               < link library
 fc_mod       = $(__fc_mod_$(mk_FC))#             < directory for module output
 fc_pic       = $(__fc_pic_$(mk_FC))#             < generate position independent code (pic) for shared libraries
 fc_soname    = $(__fc_soname_$(mk_FC))#          < set soname
-fc_static   = $(__fc_static_$(mk_FC))#           < force static linking
-fc_rpath    = $(__fc_rpath_$(mk_FC))#            < burn library path
+fc_static    = $(__fc_static_$(mk_FC))#          < force static linking
+fc_rpath     = $(__fc_rpath_$(mk_FC))#           < burn library path
+fc_no_undef  = $(__fc_no_undef_$(mk_FC))#        < force error reports for unresolved symbols
 fc_version   = $(__fc_version_$(mk_FC))#         < compiler version string
 
 
 #-- targets --
 
-fpp.*_doc = preprocess file to stdout
+fpp.*_doc = preprocess file to stdout. Directories have to be separated by \\\\, e.g. make fpp.src\\\\main.f90
 fpp.%:
-	$(call __fc_fpp__,$*)
+	$(call __fc_cmd_fpp,$(subst \,/,$*))
 
 
 #-- define compiler switches --
 
-__fc_gfortran         := gfortran
-__fc_c_gfortran       := -c
-__fc_g_gfortran       := -ggdb
-__fc_O0_gfortran      := -O0
-__fc_O1_gfortran      := -O1
-__fc_O2_gfortran      := -O2
-__fc_O3_gfortran      := -O3
-__fc_o_gfortran       := -o
-__fc_m_gfortran       := -m
-__fc_omp_gfortran     := -fopenmp
-__fc_save_gfortran    := -fno-automatic
-__fc_fpp_gfortran     := -cpp
-__fc_fpp77_gfortran   := -x f77-cpp-input
-__fc_fpp95_gfortran   := -x f95-cpp-input
-__fc_form_gfortran     = -f$1-line-length-$2
-__fc_E_gfortran       := -E $(__fc_fpp_gfortran)
-__fc_D_gfortran       := -D
-__fc_I_gfortran       := -I
-__fc_L_gfortran       := -L
-__fc_l_gfortran       := -l
-__fc_mod_gfortran     := -J
-__fc_pic_gfortran     := -shared -fpic
-__fc_soname_gfortran  := -Wl,-soname,
-__fc_static_gfortran  := -Wl,-static
-__fc_rpath_gfortran   := -Wl,-rpath,
-__fc_version_gfortran := --version
-                      
-__fc_ifort            := ifort
-__fc_c_ifort          := -c
-__fc_g_ifort          := -g
-__fc_O0_ifort         := -O0
-__fc_O1_ifort         := -O1
-__fc_O2_ifort         := -O2
-__fc_O3_ifort         := -O3
-__fc_o_ifort          := -o
-__fc_m_ifort          := -m
-__fc_omp_ifort        := -openmp
-__fc_save_ifort       := -save
-__fc_fpp_ifort        := -fpp -allow nofpp-comments
-__fc_fpp77_ifort      := $(__fc_fpp_ifort)
-__fc_fpp95_ifort      := $(__fc_fpp_ifort)
-__fc_form_ifort_fixed := -fixed
-__fc_form_ifort_free  := -nofixed
-__fc_form_ifort_none  := -noextend-source
-__fc_form_ifort_0     := -noextend-source
-__fc_form_ifort        = $(__fc_form_ifort_$1) $(or $(__fc_form_ifort_$2),-extend-source $2)
-__fc_E_ifort          := -E $(__fc_fpp_ifort)
-__fc_D_ifort          := -D
-__fc_I_ifort          := -I
-__fc_L_ifort          := -L
-__fc_l_ifort          := -l
-__fc_mod_ifort        := -module
-__fc_pic_ifort        := -shared -fpic
-__fc_soname_ifort     := -Wl,-soname=
-__fc_static_ifort     := -Wl,-Bstatic
-__fc_rpath_ifort      := -Wl,-rpath=
-__fc_version_ifort    := -V
+__fc_gfortran          := gfortran
+__fc_c_gfortran        := -c
+__fc_g_gfortran        := -ggdb
+__fc_O0_gfortran       := -O0
+__fc_O1_gfortran       := -O1
+__fc_O2_gfortran       := -O2
+__fc_O3_gfortran       := -O3
+__fc_o_gfortran        := -o
+__fc_m_gfortran        := -m
+__fc_omp_gfortran      := -fopenmp
+__fc_save_gfortran     := -fno-automatic
+__fc_fpp_gfortran      := -cpp
+__fc_fpp77_gfortran    := -x f77-cpp-input
+__fc_fpp95_gfortran    := -x f95-cpp-input
+__fc_form_gfortran      = -f$1-line-length-$2
+__fc_E_gfortran        := -E $(__fc_fpp_gfortran)
+__fc_D_gfortran        := -D
+__fc_I_gfortran        := -I
+__fc_L_gfortran        := -L
+__fc_l_gfortran        := -l
+__fc_mod_gfortran      := -J
+__fc_pic_gfortran      := -shared -fpic
+__fc_soname_gfortran   := -Wl,-soname,
+__fc_static_gfortran   := -Wl,-static
+__fc_rpath_gfortran    := -Wl,-rpath,
+__fc_no_undef_gfortran := -Wl,--no-undefined
+__fc_version_gfortran  := --version
+                       
+__fc_ifort             := ifort
+__fc_c_ifort           := -c
+__fc_g_ifort           := -g
+__fc_O0_ifort          := -O0
+__fc_O1_ifort          := -O1
+__fc_O2_ifort          := -O2
+__fc_O3_ifort          := -O3
+__fc_o_ifort           := -o
+__fc_m_ifort           := -m
+__fc_omp_ifort         := -openmp
+__fc_save_ifort        := -save
+__fc_fpp_ifort         := -fpp -allow nofpp-comments
+__fc_fpp77_ifort       := $(__fc_fpp_ifort)
+__fc_fpp95_ifort       := $(__fc_fpp_ifort)
+__fc_form_ifort_fixed  := -fixed
+__fc_form_ifort_free   := -nofixed
+__fc_form_ifort_none   := -noextend-source
+__fc_form_ifort_0      := -noextend-source
+__fc_form_ifort         = $(__fc_form_ifort_$1) $(or $(__fc_form_ifort_$2),-extend-source $2)
+__fc_E_ifort           := -E $(__fc_fpp_ifort)
+__fc_D_ifort           := -D
+__fc_I_ifort           := -I
+__fc_L_ifort           := -L
+__fc_l_ifort           := -l
+__fc_mod_ifort         := -module
+__fc_pic_ifort         := -shared -fpic
+__fc_soname_ifort      := -Wl,-soname=
+__fc_static_ifort      := -Wl,-Bstatic
+__fc_rpath_ifort       := -Wl,-rpath=
+__fc_no_undef_ifort    := -Wl,--no-undefined
+__fc_version_ifort     := -V
 
 #-- derive private flaglists --
 
@@ -172,7 +176,7 @@ __fc_flags           = $(fc_m)$(mk_ARCH) $(__fc_flags.$(mk_BUILD_MODE)) $(mk_FC_
 __fc_cflags__        = $(fc_mod) $(mk_FC_MOD_DIR) $(call mk_effective,FC_CFLAGS,$1)
 __fc_cflags          = $(__fc_include_dirs) $(__fc_pp_defines) $(__fc_flags) $(call __fc_cflags__,$1)
 
-__fc_fpp__           = $(fc) $(fc_E) $(call __fc_cflags,$1)
+__fc_cmd_fpp         = $(fc) $(fc_E) $(call __fc_cflags,$(basename $(notdir $1))) $(call mk_fileType_opts,$(notdir $1)) $1
 
 __fc_library_dirs    = $(patsubst %,$(fc_L)%,$(mk_OUT_DIR) $(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS))
 __fc_libraries       = $(patsubst %,$(fc_l)%,$(mk_FC_LIBRARIES))
