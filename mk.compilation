@@ -25,8 +25,9 @@ mk_FILE_PATTERNS_RE = $(sort $(FILE_PATTERNS_RE))
 mk_TAG_list         = $(filter-out BUILD_MODE,$(mk_TAG_CLASSES))
 mk_TAG_CLASS_list   = $(sort $(mk_TAG_CLASSES) mk_ANY)
 
-mk_tagged           = $(subst \\, ,$(strip $(foreach c,$(mk_TAG_CLASS_list),$(call mk_var,$1.$($c)))))
-mk_effective        = $(strip $(or $(call mk_tagged,$(notdir $2)),$(call mk_tagged,$1),$($1)))
+mk_val							= $(or $($1),$($1_default))
+mk_tags	            = $(foreach c,$(filter-out $1,$(mk_TAG_CLASS_list)),$($1.$(call mk_val,$c)))
+mk_get              = $(or $($1),$(strip $(call mk_tags,$(notdir $1))),$($1_default))
 mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patternRE_opts,mk_FILE_PATTERNS_RE,$1)
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
 
@@ -44,67 +45,67 @@ CONFIGURATIONS     ?= debug release
 debug_doc          ?= shortcut target for building with debug options. Equivalent to: "make built CFG=debug"
 release_doc        ?= shortcut target for building with optimization and without debug options. Equivalent to: "make built CFG=release"
 
-ARCH               ?= $(firstword $(mk_ARCH_list))
 ARCH_doc           ?= architecture id: {$(call mk_csv,$(mk_ARCH_list))}
-mk_ARCH             = $(call mk_effective,ARCH)
+ARCH_default        = $(firstword $(mk_ARCH_list))
+mk_ARCH             = $(call mk_get,ARCH)
 
-CFG                ?= $(firstword $(mk_CFG_list))
 CFG_doc            ?= current build configuration: {$(call mk_csv,$(mk_CFG_list))}
-mk_CFG              = $(CFG)
+CFG_default         = $(firstword $(mk_CFG_list))
+mk_CFG              = $(call mk_get,CFG)
 
-TAG                ?= $(subst $(mk_SPACE),.,$(foreach t,$(mk_TAG_list),$($t)))
 TAG_doc            ?= string for tagging build directory.
-mk_TAG              = $(call mk_effective,TAG)
+TAG_default         = $(subst $(mk_SPACE),.,$(foreach t,$(mk_TAG_list),$(mk_$t)))
+mk_TAG              = $(call mk_get,TAG)
 
-BUILD_MODE         ?= $(mk_OUT_TYPE)
 BUILD_MODE_doc     ?= mode for building object files: {$(call mk_csv,$(mk_OUT_TYPE_list))}
-mk_BUILD_MODE       = $(call mk_effective,BUILD_MODE)
+BUILD_MODE_default  = $(mk_OUT_TYPE)
+mk_BUILD_MODE       = $(call mk_get,BUILD_MODE)
 
-BUILD_DIR          ?= $(mk_TAG).$(mk_BUILD_MODE)
 BUILD_DIR_doc      ?= working directory for building object files.
-mk_BUILD_DIR        = .work/$(call mk_effective,BUILD_DIR)
+BUILD_DIR_default   = $(mk_TAG).$(mk_BUILD_MODE)
+mk_BUILD_DIR        = $(or $(BUILD_DIR),.work/$(call mk_get,BUILD_DIR))
 
-OUT_TYPE           ?= $(firstword $(mk_OUT_TYPE_list))
 OUT_TYPE_doc       ?= type of built binary: {$(call mk_csv,$(mk_OUT_TYPE_list))}
-mk_OUT_TYPE         = $(OUT_TYPE)# $(call mk_effective,OUT_TYPE)
+OUT_TYPE_default    = $(firstword $(mk_OUT_TYPE_list))
+mk_OUT_TYPE         = $(call mk_get,OUT_TYPE)
 
-OUT_DIR            ?= $(mk_BUILD_DIR)
 OUT_DIR_doc        ?= output directory for effective output file(s)
-mk_OUT_DIR          = $(call mk_effective,OUT_DIR)
+OUT_DIR_default     = $(mk_BUILD_DIR)
+mk_OUT_DIR          = $(call mk_get,OUT_DIR)
 
-OUT_NAME           ?= outname
 OUT_NAME_doc       ?= the base name of the final result
-mk_OUT_NAME         = $(call mk_effective,OUT_NAME)
+OUT_NAME_default    = outname
+mk_OUT_NAME         = $(call mk_get,OUT_NAME)
 
-OUT_FILE_NAME      ?= $(__out_file_name)
-OUT_FILE_NAME_doc  ?= the file name of the final result
-mk_OUT_FILE_NAME    = $(call mk_effective,OUT_FILE_NAME)
-mk_OUT_FILE_NAME_SO = $(call mk_effective,OUT_FILE_NAME)$(mk_MAYOR)$(mk_MINOR)
+OUT_FILE_NAME_doc     ?= the file name of the final result
+OUT_FILE_NAME_default  = $(__out_file_name)
+mk_OUT_FILE_NAME       = $(call mk_get,OUT_FILE_NAME)
+mk_OUT_FILE_NAME_SO    = $(call mk_get,OUT_FILE_NAME)$(mk_MAYOR)$(mk_MINOR)
 
-OUT_FILE           ?= $(mk_OUT_DIR)/$(mk_OUT_FILE_NAME)
 OUT_FILE_doc       ?= path and file name of the final result
-mk_OUT_FILE         = $(call mk_effective,OUT_FILE)
-mk_OUT_FILE_SO      = $(call mk_effective,OUT_FILE)$(mk_MAYOR)$(mk_MINOR)
+OUT_FILE_default    = $(mk_OUT_DIR)/$(mk_OUT_FILE_NAME)
+mk_OUT_FILE         = $(call mk_get,OUT_FILE)
+mk_OUT_FILE_SO      = $(call mk_get,OUT_FILE)$(mk_MAYOR)$(mk_MINOR)
 
 OUT_UMASK_doc      ?= the umask to set for the final output file
-mk_OUT_UMASK        = $(call mk_effective,OUT_UMASK)
+mk_OUT_UMASK        = $(call mk_get,OUT_UMASK)
 
-MAYOR              ?= 0
 MAYOR_doc          ?= mayor version number
-mk_MAYOR            = $(if $(MAYOR),.$(MAYOR),)
+MAYOR_default       = 0
+mk_MAYOR            = .$(call mk_val,MAYOR)
 
-MINOR              ?= $(svn_revision)
 MINOR_doc          ?= minor version number, e.g. svn revision
-mk_MINOR            = $(if $(MINOR),.$(MINOR),)
+MINOR_default       = $(svn_revision)
+mk_MINOR            = .$(call mk_val,MINOR)
 
 SOURCE_FILES       += $(scan_source)
-mk_SOURCE_DIRS      = $(call mk_effective,SOURCE_DIRS)
-mk_SOURCE_FILES     = $(call mk_effective,SOURCE_FILES)
-mk_IGNORE_FILES     = $(call mk_effective,IGNORE_FILES)
+mk_SOURCE_DIRS      = $(call mk_get,SOURCE_DIRS)
+mk_SOURCE_FILES     = $(call mk_get,SOURCE_FILES)
+mk_IGNORE_FILES     = $(call mk_get,IGNORE_FILES)
 mk_CLEARED_FILES   += $(CLEARED_FILES)
 
-mk_DEPENDS_ON       = $(call mk_effective,DEPENDS_ON)
-mk_BINARY_TAG       = $(call mk_effective,BINARY_TAG)
+mk_DEPENDS_ON       = $(call mk_get,DEPENDS_ON)
+mk_BINARY_TAG       = $(call mk_get,BINARY_TAG)
 mk_BINARY_TAG_len   = $(call mk_lines,$(mk_BINARY_TAG))
 mk_BINARY_TAG_frame = $(if $(mk_BINARY_TAG),\
                            \n $(mk_BINARY_TAG)                       \n\

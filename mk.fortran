@@ -23,46 +23,38 @@ cmd_depends      += cmd_FC_depends
 
 #-- user parameters --
 
-FC                   = $(firstword $(mk_FC_list))
 FC_doc              ?= used fortran compiler: {$(call mk_csv,$(mk_FC_list))}
-mk_FC                = $(call mk_effective,FC)
+FC                   = $(firstword $(mk_FC_list))#< override default on most systems: f77
+mk_FC                = $(call mk_get,FC)
 
-FC_CFLAGS           ?= 
 FC_CFLAGS_doc       ?= fortran compile flags, applied to any file
-mk_FC_CFLAGS         = $(call mk_effective,FC_CFLAGS)
+mk_FC_CFLAGS         = $(call mk_get,FC_CFLAGS)
 
-FC_FLAGS            ?=
 FC_FLAGS_doc        ?= fortran flags, applied to any compile and link command
-mk_FC_FLAGS          = $(call mk_effective,FC_FLAGS)
+mk_FC_FLAGS          = $(call mk_get,FC_FLAGS)
 
-FC_INCLUDE_DIRS     ?=
 FC_INCLUDE_DIRS_doc ?= fortran include directories
-mk_FC_INCLUDE_DIRS   = $(call mk_effective,FC_INCLUDE_DIRS)
+mk_FC_INCLUDE_DIRS   = $(call mk_get,FC_INCLUDE_DIRS)
 
-FC_LFLAGS           ?= 
-FC_LFLAGS.shared    ?= $(fc_no_undef)
 FC_LFLAGS_doc       ?= fortran link flags, applied to any file
-mk_FC_LFLAGS         = $(call mk_effective,FC_LFLAGS)
+FC_LFLAGS.shared    ?= $(fc_no_undef)
+mk_FC_LFLAGS         = $(call mk_get,FC_LFLAGS)
 
-FC_LIBRARIES        ?=
 FC_LIBRARIES_doc    ?= list of linked libraries
-mk_FC_LIBRARIES      = $(call mk_effective,FC_LIBRARIES)
+mk_FC_LIBRARIES      = $(call mk_get,FC_LIBRARIES)
 
-FC_LIBRARY_DIRS     ?=
 FC_LIBRARY_DIRS_doc ?= list of library directories
-mk_FC_LIBRARY_DIRS   = $(call mk_effective,FC_LIBRARY_DIRS)
+mk_FC_LIBRARY_DIRS   = $(call mk_get,FC_LIBRARY_DIRS)
 
-FC_LINK_OTHER       ?=
 FC_LINK_OTHER_doc   ?= list of other link input files 
-mk_FC_LINK_OTHER     = $(call mk_effective,FC_LINK_OTHER)
+mk_FC_LINK_OTHER     = $(call mk_get,FC_LINK_OTHER)
 
-FC_MOD_DIR          ?= $(mk_BUILD_DIR)
 FC_MOD_DIR_doc      ?= output directory for generated fortran module files
-mk_FC_MOD_DIR        = $(call mk_effective,FC_MOD_DIR)
+FC_MOD_DIR_default   = $(mk_BUILD_DIR)
+mk_FC_MOD_DIR        = $(call mk_get,FC_MOD_DIR)
 
-FC_PP_DEFINES       ?=
 FC_PP_DEFINES_doc   ?= list of fortran preprocessor defines
-mk_FC_PP_DEFINES     = $(call mk_effective,FC_PP_DEFINES)
+mk_FC_PP_DEFINES     = $(call mk_get,FC_PP_DEFINES)
 
 
 #-- exposed compiler switches --
@@ -173,7 +165,7 @@ __fc_include_dirs    = $(patsubst %,$(fc_I)%,$(mk_FC_MOD_DIR) $(mk_BUILD_DIR) $(
 __fc_flags.shared    = $(fc_pic)
 __fc_flags           = $(fc_m)$(mk_ARCH) $(__fc_flags.$(mk_BUILD_MODE)) $(mk_FC_FLAGS)
 
-__fc_cflags__        = $(fc_mod) $(mk_FC_MOD_DIR) $(call mk_effective,FC_CFLAGS,$1)
+__fc_cflags__        = $(fc_mod) $(mk_FC_MOD_DIR) $(mk_FC_CFLAGS) $(call mk_get,$1)
 __fc_cflags          = $(__fc_include_dirs) $(__fc_pp_defines) $(__fc_flags) $(call __fc_cflags__,$1)
 
 __fc_cmd_fpp         = $(fc) $(fc_E) $(call __fc_cflags,$(basename $(notdir $1))) $(call mk_fileType_opts,$(notdir $1)) $1

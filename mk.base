@@ -78,7 +78,7 @@ value.%:
 
 #-- private definitions --
 
-__var_doc = $(shell printf '%-16s %-12s  %-60s  %s\\n' '$1' '$(origin $1)' '$($(1)_doc)' '$(subst $$,"$$",$(strip $(mk_$1)))')
+__var_doc = $(shell printf '%-16s %-12s  %-60s  %s\\n' '$1' '$(subst undefined,default,$(origin $1))' '$($(1)_doc)' '$(subst $$,"$$",$(strip $(mk_$1)))')
 __var_tab = $(call mk_map,__var_doc,$(sort $(mk_PARAMETERS)))
 
 __tgt_doc = $(shell printf '%-10s %s\\n' '$1' '$($(1)_doc)')
