@@ -9,13 +9,13 @@ mk_logged_cmd   = @echo $1 $(__log) && $1 $(__log)
 
 #-- parameters ...
 
-LOG          ?= on
-LOG_doc      ?= switch to enable/disable logging {on, off}
-mk_LOG        = $(LOG)
+LOG_doc          ?= switch to enable/disable logging {on, off}
+LOG_default       = on
+mk_LOG            = $(call mk_get,LOG)
 
-LOG_FILE     ?= $(mk_BUILD_DIR)/_log.txt
-LOG_FILE_doc ?= file for logging build messages.
-mk_LOG_FILE   = $(LOG_FILE)
+LOG_FILE_doc     ?= file for logging build messages.
+LOG_FILE_default  = $(mk_BUILD_DIR)/_log.txt
+mk_LOG_FILE       = $(call mk_get,LOG_FILE)
 
 #-- targets ...
 
