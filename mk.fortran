@@ -184,7 +184,7 @@ __fc_cmd_link.static = ar rs $(mk_OUT_FILE) $(__fc_link_objects) $(__fc_copy_mod
 
 __fc_copy_mods       = && cp $(mk_FC_MOD_DIR)/*[!_].mod $(mk_OUT_DIR) $(mk_ignoreErrors)
 __fc_symlnk_so       = && ln -sf $(mk_OUT_FILE_NAME_SO) $(mk_OUT_FILE)$(mk_MAYOR) && ln -sf $(mk_OUT_FILE_NAME)$(mk_MAYOR) $(mk_OUT_FILE)
-__fc_find_pattern    = $(subst ' -,' -or -,$(foreach l,$(mk_FC_LIBRARIES),-wholename '*$l*'))
+__fc_find_pattern    = $(subst ' -,' -or -,$(foreach l,$(mk_FC_LIBRARIES),-wholename '*$l*.so*'))
 __fc_find_libs_cmd   = && find $(mk_FC_LIBRARY_DIRS) \( $(__fc_find_pattern) \) -and -not -path '*/.*' -exec cp -a {} $(mk_OUT_DIR) \; $(mk_ignoreErrors)
 __fc_copy_pkg_libs   = $(if $(and $(mk_FC_LIBRARY_DIRS),$(mk_FC_LIBRARIES)),$(__fc_find_libs_cmd),)
 
