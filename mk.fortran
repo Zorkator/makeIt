@@ -179,12 +179,14 @@ __fc_link_objects    = $(sort $(mk_OBJECTS))
 __fc_link_input      = $(__fc_link_objects) $(mk_FC_LINK_OTHER) $(__fc_libraries)
 
 __fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE) $(__fc_link_input) $(__fc_copy_pkg_libs)
-__fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_link_input) && $(__fc_symlnk_so) && $(__fc_copy_mods) $(__fc_copy_pkg_libs)
-__fc_cmd_link.static = ar rs $(mk_OUT_FILE) $(__fc_link_objects) && $(__fc_copy_mods) $(__fc_copy_pkg_libs)
+__fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_link_input) $(__fc_symlnk_so) $(__fc_copy_mods) $(__fc_copy_pkg_libs)
+__fc_cmd_link.static = ar rs $(mk_OUT_FILE) $(__fc_link_objects) $(__fc_copy_mods) $(__fc_copy_pkg_libs)
 
-__fc_copy_mods       = cp $(mk_FC_MOD_DIR)/*[!_].mod $(mk_OUT_DIR) 2> /dev/null || :
-__fc_symlnk_so       = ln -sf $(mk_OUT_FILE_NAME_SO) $(mk_OUT_FILE)$(mk_MAYOR) && ln -sf $(mk_OUT_FILE_NAME)$(mk_MAYOR) $(mk_OUT_FILE)
-__fc_copy_pkg_libs   = $(if $(mk_PKG_LIBRARY_DIRS),&& cp -a $(foreach pkg,$(mk_PKG_LIBRARY_DIRS),$(pkg)/lib*) $(mk_OUT_DIR),)
+__fc_copy_mods       = && cp $(mk_FC_MOD_DIR)/*[!_].mod $(mk_OUT_DIR) $(mk_ignoreErrors)
+__fc_symlnk_so       = && ln -sf $(mk_OUT_FILE_NAME_SO) $(mk_OUT_FILE)$(mk_MAYOR) && ln -sf $(mk_OUT_FILE_NAME)$(mk_MAYOR) $(mk_OUT_FILE)
+__fc_find_pattern    = $(subst ' -,' -or -,$(foreach l,$(mk_FC_LIBRARIES),-wholename '*$l*'))
+__fc_find_libs_cmd   = && find $(mk_FC_LIBRARY_DIRS) \( $(__fc_find_pattern) \) -and -not -path '*/.*' -exec cp -a {} $(mk_OUT_DIR) \; $(mk_ignoreErrors)
+__fc_copy_pkg_libs   = $(if $(and $(mk_FC_LIBRARY_DIRS),$(mk_FC_LIBRARIES)),$(__fc_find_libs_cmd),)
 
 
 __fc_cmd_compile     = $(fc) $(fc_c) $(call __fc_cflags_of,$(notdir $<)) $< $(fc_o) $@

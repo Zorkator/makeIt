@@ -20,6 +20,7 @@ mk_COMMA      := ,
 mk_DOLLAR     := $$
 mk_ANY        := %
 
+mk_ignoreErrors  := 2> /dev/null || :
 mk_echo          := /bin/echo -e
 mk_lower          = $(shell echo $(1) | tr A-Z a-z)#<                                          mk_lower( sTriNg )                 : string
 mk_upper          = $(shell echo $(1) | tr a-z A-Z)#<                                          mk_upper( sTriNg )                 : STRING
