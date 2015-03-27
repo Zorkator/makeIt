@@ -165,10 +165,11 @@ __fc_include_dirs    = $(patsubst %,$(fc_I)%,$(mk_FC_MOD_DIR) $(mk_BUILD_DIR) $(
 __fc_flags.shared    = $(fc_pic)
 __fc_flags           = $(fc_m)$(mk_ARCH) $(__fc_flags.$(mk_BUILD_MODE)) $(mk_FC_FLAGS)
 
-__fc_cflags__        = $(fc_mod) $(mk_FC_MOD_DIR) $(mk_FC_CFLAGS) $(call mk_get,$1)
+__fc_cflags__        = $(fc_mod) $(mk_FC_MOD_DIR) $(mk_FC_CFLAGS) $(call mk_get,$(basename $1))
 __fc_cflags          = $(__fc_include_dirs) $(__fc_pp_defines) $(__fc_flags) $(call __fc_cflags__,$1)
+__fc_cflags_of       = $(call __fc_cflags,$1) $(call mk_fileType_opts,$1)
 
-__fc_cmd_fpp         = $(fc) $(fc_E) $(call __fc_cflags,$(basename $(notdir $1))) $(call mk_fileType_opts,$(notdir $1)) $1
+__fc_cmd_fpp         = $(fc) $(fc_E) $(call __fc_cflags_of,$(notdir $1)) $1
 
 __fc_library_dirs    = $(patsubst %,$(fc_L)%,$(mk_OUT_DIR) $(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS))
 __fc_libraries       = $(patsubst %,$(fc_l)%,$(mk_FC_LIBRARIES))
@@ -176,8 +177,6 @@ __fc_lflags.shared   = $(fc_soname)$(mk_OUT_FILE_NAME)$(mk_MAYOR)
 __fc_lflags          = $(mk_FC_LFLAGS) $(__fc_flags) $(__fc_lflags.$(mk_BUILD_MODE)) $(__fc_library_dirs)
 __fc_link_objects    = $(sort $(mk_OBJECTS))
 __fc_link_input      = $(__fc_link_objects) $(mk_FC_LINK_OTHER) $(__fc_libraries)
-
-__fc_cmd_compile     = $(fc) $(fc_c) $(call __fc_cflags,$(notdir $*)) $(call mk_fileType_opts,$(notdir $<)) $< $(fc_o) $@
 
 __fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE) $(__fc_link_input) $(__fc_copy_pkg_libs)
 __fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_link_input) && $(__fc_symlnk_so) && $(__fc_copy_mods) $(__fc_copy_pkg_libs)
@@ -187,6 +186,8 @@ __fc_copy_mods       = cp $(mk_FC_MOD_DIR)/*[!_].mod $(mk_OUT_DIR) 2> /dev/null 
 __fc_symlnk_so       = ln -sf $(mk_OUT_FILE_NAME_SO) $(mk_OUT_FILE)$(mk_MAYOR) && ln -sf $(mk_OUT_FILE_NAME)$(mk_MAYOR) $(mk_OUT_FILE)
 __fc_copy_pkg_libs   = $(if $(mk_PKG_LIBRARY_DIRS),&& cp -a $(foreach pkg,$(mk_PKG_LIBRARY_DIRS),$(pkg)/lib*) $(mk_OUT_DIR),)
 
+
+__fc_cmd_compile     = $(fc) $(fc_c) $(call __fc_cflags_of,$(notdir $<)) $< $(fc_o) $@
 
 $(mk_BUILD_DIR)/%.o: %.f95
 	$(call mk_logged_cmd,$(__fc_cmd_compile))

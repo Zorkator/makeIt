@@ -25,7 +25,6 @@ mk_FILE_PATTERNS_RE = $(sort $(FILE_PATTERNS_RE))
 mk_TAG_list         = $(filter-out BUILD_MODE,$(mk_TAG_CLASSES))
 mk_TAG_CLASS_list   = $(sort $(mk_TAG_CLASSES) mk_ANY)
 
-mk_val							= $(or $($1),$($1_default))
 mk_tags	            = $(foreach c,$(filter-out $1,$(mk_TAG_CLASS_list)),$($1.$(call mk_val,$c)))
 mk_get              = $(or $($1),$(strip $(call mk_tags,$(notdir $1))),$($1_default))
 mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patternRE_opts,mk_FILE_PATTERNS_RE,$1)
