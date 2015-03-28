@@ -92,6 +92,7 @@ fc_version   = $(__fc_version_$(mk_FC))#         < compiler version string
 
 fpp.*_doc = preprocess file to stdout. Directories have to be separated by \\\\, e.g. make fpp.src\\\\main.f90
 fpp.%:
+	$(MAKE) --quiet $(subst \,/,$*)
 	$(call __fc_cmd_fpp,$(subst \,/,$*))
 
 
@@ -160,7 +161,7 @@ __fc_version_ifort     := -V
 #-- derive private flaglists --
 
 __fc_pp_defines      = $(mk_FC_PP_DEFINES:%=$(fc_D)%)
-__fc_include_dirs    = $(patsubst %,$(fc_I)%,$(mk_FC_MOD_DIR) $(mk_BUILD_DIR) $(mk_FC_INCLUDE_DIRS))
+__fc_include_dirs    = $(sort $(patsubst %,$(fc_I)%,$(mk_FC_MOD_DIR) $(mk_BUILD_DIR) $(mk_FC_INCLUDE_DIRS)))
 
 __fc_flags.shared    = $(fc_pic)
 __fc_flags           = $(fc_m)$(mk_ARCH) $(__fc_flags.$(mk_BUILD_MODE)) $(mk_FC_FLAGS)
@@ -171,15 +172,15 @@ __fc_cflags_of       = $(call __fc_cflags,$1) $(call mk_fileType_opts,$1)
 
 __fc_cmd_fpp         = $(fc) $(fc_E) $(call __fc_cflags_of,$(notdir $1)) $1
 
-__fc_library_dirs    = $(patsubst %,$(fc_L)%,$(mk_OUT_DIR) $(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS))
+__fc_library_dirs    = $(sort $(patsubst %,$(fc_L)%,$(mk_OUT_DIR) $(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS)))
 __fc_libraries       = $(patsubst %,$(fc_l)%,$(mk_FC_LIBRARIES))
 __fc_lflags.shared   = $(fc_soname)$(mk_OUT_FILE_NAME)$(mk_MAYOR)
 __fc_lflags          = $(mk_FC_LFLAGS) $(__fc_flags) $(__fc_lflags.$(mk_BUILD_MODE)) $(__fc_library_dirs)
 __fc_link_objects    = $(sort $(mk_OBJECTS))
-__fc_link_input      = $(__fc_link_objects) $(mk_FC_LINK_OTHER) $(__fc_libraries)
+__fc_link_input      = $(__fc_link_objects) $(__fc_lflags) $(__fc_libraries) $(mk_FC_LINK_OTHER)
 
-__fc_cmd_link.exe    = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE) $(__fc_link_input) $(__fc_copy_pkg_libs)
-__fc_cmd_link.shared = $(fc) $(__fc_lflags) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_link_input) $(__fc_symlnk_so) $(__fc_copy_mods) $(__fc_copy_pkg_libs)
+__fc_cmd_link.exe    = $(fc) $(fc_o) $(mk_OUT_FILE) $(__fc_link_input) $(__fc_copy_pkg_libs)
+__fc_cmd_link.shared = $(fc) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_link_input) $(__fc_symlnk_so) $(__fc_copy_mods) $(__fc_copy_pkg_libs)
 __fc_cmd_link.static = ar rs $(mk_OUT_FILE) $(__fc_link_objects) $(__fc_copy_mods) $(__fc_copy_pkg_libs)
 
 __fc_copy_mods       = && cp $(mk_FC_MOD_DIR)/*[!_].mod $(mk_OUT_DIR) $(mk_ignoreErrors)
