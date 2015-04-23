@@ -12,7 +12,7 @@ sinclude $(__mk_root)gmsl/gmsl
 
 mk_PARAMETERS  += 
 mk_CFG_list    +=
-mk_TARGET_list += help echo.* eval.* value.*
+mk_TARGET_list += help echo.* eval.* value.* chkopts
 
 mk_NULL       :=
 mk_SPACE      := $(mk_NULL) #
@@ -34,6 +34,7 @@ mk_var            = $(if $(call mk_defined,$1),\\$($1),)#<                      
 mk_val            = $(or $($1),$($1_default))#<                                                mk_val( varId )                    : val | default | ''
 mk_map            = $(foreach i,$2,$(call $1,$i))#<                                            mk_map( func, v1 v2 ... )          : res1 res2 ...
 mk_lines          = $(shell $(mk_echo) "$1" | wc -l)#<                                         mk_lines( string )                 : num of lines
+mk_opt_set        = {$(call mk_csv,$(mk_$1_list))}#<                                           mk_opt_set( optID )                : string of valid options
 
 mk_match          = ${shell case $1 in $2) echo '$(value 3)';; *) ;; esac}#<                   mk_match( text, pattern, res )   : res | ''
 mk_matchRE        = ${shell if expr $1 : $2 > /dev/null; then echo '$(value 3)'; fi}#<         mk_matchRE( text, re_pattern, res ): res | ''
@@ -74,14 +75,22 @@ value.*_doc = show value of make variable
 value.%:
 	@$(mk_echo) '$(subst \n,\\\\n,$(value $*))'
 
+
+chkopts_doc = check validity of given options
+chkopts:
+	@$(mk_echo) '$(call __var_tab)' >> /dev/null
+
+
 %/:
 	@mkdir -p $@
 
 
 #-- private definitions --
 
-__var_doc = $(shell printf '%-16s %-12s  %-60s  %s\\n' '$1' '$(subst undefined,default,$(origin $1))' '$($(1)_doc)' '$(subst $$,"$$",$(strip $(mk_$1)))')
-__var_tab = $(call mk_map,__var_doc,$(sort $(mk_PARAMETERS)))
+__var_line = $(shell printf '%-16s %-12s  %-60s  %s\\n' '$1' '$(subst undefined,default,$(origin $1))' '$($(1)_doc)' '$(subst $$,"$$",$(strip $(mk_$1)))')
+__var_chk  = $(if $(mk_$1_list),$(filter $(mk_$1),$(mk_$1_list)),ok)
+__var_doc  = $(if $(call __var_chk,$1),$(call __var_line,$1),$(error option variable $1 is set to unknown value "$($1)"))
+__var_tab  = $(call mk_map,__var_doc,$(sort $(mk_PARAMETERS)))
 
 __tgt_doc = $(shell printf '%-10s %s\\n' '$1' '$($(1)_doc)')
 __tgt_tab = $(call mk_map,__tgt_doc,$(sort $(mk_TARGET_list)))

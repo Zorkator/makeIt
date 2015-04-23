@@ -8,7 +8,7 @@ include $(dir $(lastword $(MAKEFILE_LIST)))mk.compilation
 #-- set/modify public definitions --
 
 mk_PARAMETERS    += FC FC_MOD_DIR FC_PP_DEFINES FC_INCLUDE_DIRS FC_FLAGS FC_CFLAGS FC_LFLAGS FC_LIBRARY_DIRS FC_LIBRARIES FC_LINK_OTHER
-mk_TAG_CLASSES   += FC
+mk_OPT_CLASSES   += FC
 mk_TARGET_list   += fpp.*
 mk_FILE_TYPES    += f95 f90 for f
 mk_OUTPUT_DIRS   += $(FC_MOD_DIR)

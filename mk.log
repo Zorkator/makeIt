@@ -2,6 +2,8 @@
 ifndef __mk_log_included
 __mk_log_included := true
 
+include $(dir $(lastword $(MAKEFILE_LIST)))mk.base
+
 mk_PARAMETERS  += LOG LOG_FILE
 mk_TARGET_list += log
 mk_logged_cmd   = @echo $1 $(__log) && $1 $(__log)
@@ -9,9 +11,11 @@ mk_logged_cmd   = @echo $1 $(__log) && $1 $(__log)
 
 #-- parameters ...
 
-LOG_doc          ?= switch to enable/disable logging {on, off}
-LOG_default       = on
+mk_LOG_list       = on off
+LOG_doc          ?= switch to enable/disable logging: $(call mk_opt_set,LOG)
+LOG_default       = $(firstword $(mk_LOG_list))
 mk_LOG            = $(call mk_get,LOG)
+
 
 LOG_FILE_doc     ?= file for logging build messages.
 LOG_FILE_default  = $(mk_BUILD_DIR)/_log.txt
