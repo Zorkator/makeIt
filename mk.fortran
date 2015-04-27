@@ -70,6 +70,10 @@ fc_o         = $(__fc_o_$(mk_FC))#               < output file
 fc_m         = $(__fc_m_$(mk_FC))#               < architecture
 fc_omp       = $(__fc_omp_$(mk_FC))#             < enable OpenMP extensions
 fc_save      = $(__fc_save_$(mk_FC))#            < place local variables in static memory
+fc_fpe       = $(call __fc_fpe_$(mk_FC),$1)#     < set fpe-trap mode: $(call fc_fpe,{0,1,3})
+#                                                     0: traps invalid, zero, overflow AND flush-to-zero (ifort-only!)
+#                                                     1: no traps, flush-to-zero (ifort-only!)
+#                                                     3: no traps
 fc_fpp       = $(__fc_fpp_$(mk_FC))#             < enable preprocessor
 fc_fpp77     = $(__fc_fpp77_$(mk_FC))#           < enable preprocessor f77 style
 fc_fpp95     = $(__fc_fpp95_$(mk_FC))#           < enable preprocessor f95 style
@@ -100,7 +104,7 @@ fpp.%:
 
 __fc_gfortran          := gfortran
 __fc_c_gfortran        := -c
-__fc_g_gfortran        := -ggdb
+__fc_g_gfortran        := -ggdb -Og
 __fc_O0_gfortran       := -O0
 __fc_O1_gfortran       := -O1
 __fc_O2_gfortran       := -O2
@@ -109,6 +113,10 @@ __fc_o_gfortran        := -o
 __fc_m_gfortran        := -m
 __fc_omp_gfortran      := -fopenmp
 __fc_save_gfortran     := -fno-automatic
+__fc_fpe_0_gfortran    := -ffpe-trap=invalid,zero,overflow
+__fc_fpe_1_gfortran    :=
+__fc_fpe_3_gfortran    :=
+__fc_fpe_gfortran       = $(__fc_fpe_$1_gfortran)
 __fc_fpp_gfortran      := -cpp
 __fc_fpp77_gfortran    := -x f77-cpp-input
 __fc_fpp95_gfortran    := -x f95-cpp-input
@@ -137,6 +145,7 @@ __fc_o_ifort           := -o
 __fc_m_ifort           := -m
 __fc_omp_ifort         := -openmp
 __fc_save_ifort        := -save
+__fc_fpe_ifort          = -fpe-all=$1
 __fc_fpp_ifort         := -fpp -allow nofpp-comments
 __fc_fpp77_ifort       := $(__fc_fpp_ifort)
 __fc_fpp95_ifort       := $(__fc_fpp_ifort)
