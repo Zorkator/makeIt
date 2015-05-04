@@ -26,7 +26,7 @@ mk_FILE_PATTERNS_RE = $(sort $(FILE_PATTERNS_RE))
 mk_OPT_list         = $(filter-out BUILD_MODE,$(mk_OPT_CLASSES))
 mk_OPT_CLASS_list   = $(sort $(mk_OPT_CLASSES) mk_ANY)
 
-mk_tags	            = $(foreach c,$(filter-out $1,$(mk_OPT_CLASS_list)),$($1.$(call mk_val,$c)))
+mk_tags             = $(foreach c,$(filter-out $1,$(mk_OPT_CLASS_list)),$($1.$(call mk_val,$c)))
 mk_get              = $(or $($1),$(strip $(call mk_tags,$(notdir $1))),$($1_default))
 mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patternRE_opts,mk_FILE_PATTERNS_RE,$1)
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
@@ -41,6 +41,8 @@ scan_file_pattern   = $(call mk_chain_args,or,$(foreach x,$(mk_FILE_TYPES),-name
 ignore_dir_pattern  = $(call mk_chain_args,or,$(foreach x,$(mk_IGNORE_DIRS),-path '*/$x/*') -path '*/.*')
 scan_files_in       = $(shell find -L $1 \( $(scan_file_pattern) \) -and -not \( $(ignore_dir_pattern) \))
 scan_source_dirs    = $(call mk_norm_dir,$(sort $(dir $(call scan_files_in,$1))))
+filter_source_in    = $(filter $1/%,$(mk_SOURCE_FILES))
+strip_source_in     = $(patsubst $1/%,%,$(call filter_source_in,$1))
 
 svn_revision       := $(shell svn info | sed -ne 's/^Revision: //p')
 svn_modified       := $(shell svn st | grep "^M " | awk '{print $$NF}')
@@ -154,10 +156,19 @@ built: depend
 depend_doc = build dependency list in $(mk_DEPS)
 depend:
 	# evaluate dependencies ...
-	@if [ -n "$(mk_SOURCE_FILES)" ]; then                                         \
+	@$(if $(mk_SOURCE_FILES),$(eval __got_source_files := 1),)
+	@# NOTE: the following if-blocks are split to reduce the danger of exceeding the maximum cmd line limit!
+	@#
+	@# create build-directory, create links to variant files and
+	@#   make sure all mk_SOURCE_FILES exist BEFORE running dependency analysis ...
+	@if [ -n "$(__got_source_files)" ]; then                                      \
 		$(MAKE) --quiet $(mk_BUILD_DIR)/                                           ;\
 		for x in $(__link_variants); do $$x ; done                                 ;\
 		$(MAKE) --quiet $(mk_SOURCE_FILES)                                         ;\
+	fi
+	@#
+	@# run dependency analysis commands on mk_SOURCE_FILES
+	@if [ -n "$(__got_source_files)" ]; then                                      \
 		$(mk_echo) '=====\nstarted build @ '`date`'\n=====' > $(mk_LOG_FILE)       ;\
 		$(foreach cmd,$(cmd_depends),$(call $(cmd),$(mk_DEPS),$(mk_SOURCE_FILES))) ;\
 	fi
@@ -202,7 +213,7 @@ __out_file_name        = $(call __out_file_name_of,$(mk_OUT_NAME).$(mk_TAG),$(mk
 __built_type_exe       = APPLICATION
 __built_type_shared    = SHARED_LIB
 __built_type_static    = STATIC_LIB
-mk_BUILT_TYPE_NAME	   = $(__built_type_$(mk_OUT_TYPE))
+mk_BUILT_TYPE_NAME     = $(__built_type_$(mk_OUT_TYPE))
 
 __link_variants   = $(foreach f,$(mk_VARIANT_FILES),'ln -fs $(abspath  $f) $(call mk_variant_of,$f)')
 mk_OBJECTS        = $(call mk_object_of,$(mk_SOURCE_FILES))
