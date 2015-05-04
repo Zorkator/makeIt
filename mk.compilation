@@ -31,10 +31,17 @@ mk_get              = $(or $($1),$(strip $(call mk_tags,$(notdir $1))),$($1_defa
 mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patternRE_opts,mk_FILE_PATTERNS_RE,$1)
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
 mk_variant_of       = $(mk_BUILD_DIR)/variant.$(notdir $1)
+mk_chain_args       = $(subst ' -,' -$1 -,$2)
 
 any_source          = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
-any_source_in       = $(foreach t,$(mk_FILE_TYPES),$(wildcard $(1)/*.$(t)))
+any_source_in       = $(foreach t,$(mk_FILE_TYPES),$(wildcard $(call mk_norm_dir,$1)/*.$(t)))
 scan_source         = $(foreach d,$(mk_SOURCE_DIRS),$(call any_source_in,$d))
+
+scan_file_pattern   = $(call mk_chain_args,or,$(foreach x,$(mk_FILE_TYPES),-name '*.$x'))
+ignore_dir_pattern  = $(call mk_chain_args,or,$(foreach x,$(mk_IGNORE_DIRS),-path '*/$x/*') -path '*/.*')
+scan_files_in       = $(shell find -L $1 \( $(scan_file_pattern) \) -and -not \( $(ignore_dir_pattern) \))
+scan_source_dirs    = $(call mk_norm_dir,$(sort $(dir $(call scan_files_in,$1))))
+
 svn_revision       := $(shell svn info | sed -ne 's/^Revision: //p')
 svn_modified       := $(shell svn st | grep "^M " | awk '{print $$NF}')
 svn_modified_tab    = $(call mk_join,\\\n,$(svn_modified))
@@ -99,9 +106,12 @@ MINOR_doc             ?= minor version number, e.g. svn revision
 MINOR_default          = $(svn_revision)
 mk_MINOR               = .$(call mk_val,MINOR)
 
-SOURCE_FILES.%        += $(scan_source)
+SOURCE_DIRS           ?= $(call scan_source_dirs,.)
 mk_SOURCE_DIRS         = $(call mk_get,SOURCE_DIRS)
-mk_SOURCE_FILES        = $(call mk_get,SOURCE_FILES)
+mk_IGNORE_DIRS         = $(call mk_get,IGNORE_DIRS)
+
+SOURCE_FILES.%        += $(scan_source)
+mk_SOURCE_FILES        = $(filter-out $(mk_IGNORE_FILES),$(call mk_get,SOURCE_FILES) $(mk_VARIANT_SOURCE))
 mk_VARIANT_FILES       = $(call mk_get,VARIANT_FILES)
 mk_VARIANT_SOURCE      = $(call map,mk_variant_of,$(mk_VARIANT_FILES))
 mk_IGNORE_FILES        = $(call mk_get,IGNORE_FILES)
@@ -124,7 +134,6 @@ mk_BINARY_TAG_frame    = $(if $(mk_BINARY_TAG),\
                               head -$(mk_BINARY_TAG_len)\n,)
 
 
-
 #-- targets --
 
 .DEFAULT_GOAL = help
@@ -145,15 +154,17 @@ built: depend
 depend_doc = build dependency list in $(mk_DEPS)
 depend:
 	# evaluate dependencies ...
-	@$(if $(__source_files),,$(error missing source files))
-	@$(MAKE) --quiet $(mk_BUILD_DIR)/
-	@for x in $(__link_variants); do $$x ; done
-	@$(MAKE) --quiet $(__source_files)
-	@$(mk_echo) '=====\nstarted build @ '`date`'\n=====' > $(mk_LOG_FILE)
-	@$(foreach cmd,$(cmd_depends),$(call $(cmd),$(mk_DEPS),$(__source_files)))
+	@if [ -n "$(mk_SOURCE_FILES)" ]; then                                         \
+		$(MAKE) --quiet $(mk_BUILD_DIR)/                                           ;\
+		for x in $(__link_variants); do $$x ; done                                 ;\
+		$(MAKE) --quiet $(mk_SOURCE_FILES)                                         ;\
+		$(mk_echo) '=====\nstarted build @ '`date`'\n=====' > $(mk_LOG_FILE)       ;\
+		$(foreach cmd,$(cmd_depends),$(call $(cmd),$(mk_DEPS),$(mk_SOURCE_FILES))) ;\
+	fi
 
 
 $(OUT_): $(OBJ_)
+	@rm -f $(OUT_)
 	$(call mk_logged_cmd,$(cmd_LINK))
 	@if [ -e "$(OUT_)" ]; then                                 \
 		$(mk_echo) tagging binary ...                           ;\
@@ -194,11 +205,9 @@ __built_type_static    = STATIC_LIB
 mk_BUILT_TYPE_NAME	   = $(__built_type_$(mk_OUT_TYPE))
 
 __link_variants   = $(foreach f,$(mk_VARIANT_FILES),'ln -fs $(abspath  $f) $(call mk_variant_of,$f)')
-__source_files    = $(filter-out $(mk_IGNORE_FILES),$(mk_SOURCE_FILES) $(mk_VARIANT_SOURCE))
-__source_dirs     = $(sort $(dir $(__source_files)))
-mk_OBJECTS        = $(call mk_object_of,$(__source_files))
+mk_OBJECTS        = $(call mk_object_of,$(mk_SOURCE_FILES))
 
-VPATH = $(subst $(mk_SPACE),:,$(__source_dirs))
+VPATH = $(subst $(mk_SPACE),:,$(mk_SOURCE_DIRS))
 
 sinclude $(DEPS_)
 
