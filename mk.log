@@ -6,7 +6,8 @@ include $(dir $(lastword $(MAKEFILE_LIST)))mk.base
 
 mk_PARAMETERS  += LOG LOG_FILE
 mk_TARGET_list += log
-mk_logged_cmd   = @echo $1 $(__log) && $1 $(__log)
+mk_log          = $(mk_echo) $2 '$1' $(call __log,$3)#<          (call mk_log,<message string>,[<echo-opts>],[renew])
+mk_logged_cmd   = $(call mk_log,$1) && $1 $(call __log,$2,$3)#<  (call mk_logged_cmd,<command string>,[<echo-opts>],[renew])
 
 
 #-- parameters ...
@@ -25,13 +26,18 @@ mk_LOG_FILE       = $(call mk_get,LOG_FILE)
 
 log_doc = show the logged command output via less
 log:
-	@less $(mk_LOG_FILE)
+	@if [ -e "$(mk_LOG_FILE)" ]; then                 \
+		less $(mk_LOG_FILE)                            ;\
+	else                                              \
+		$(mk_echo) No log so far. Need to build first! ;\
+	fi
+
 
 #-- definitions for build step logging ...
 
-__log_on  = 2>&1 | tee -a $(mk_LOG_FILE)
+__log_on  = 2>&1 | tee $(if $1,,-a) $(mk_LOG_FILE)
 __log_off =
-__log     = $(__log_$(mk_LOG))
+__log     = $(call __log_$(mk_LOG),$1)
 
 endif # __mk_log_included
 

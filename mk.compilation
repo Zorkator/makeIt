@@ -9,13 +9,13 @@ include $(dir $(lastword $(MAKEFILE_LIST)))mk.base
 
 mk_PARAMETERS   += BUILD_MODE CFG ARCH TAG BUILD_DIR OUT_TYPE OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE OUT_UMASK SUBPACKAGES
 mk_OPT_CLASSES  += BUILD_MODE CFG ARCH
-mk_TARGET_list  += built depend clean $(TARGETS)
+mk_TARGET_list  += built clean $(TARGETS)
 mk_FILE_TYPES   += 
 mk_OUTPUT_DIRS  += $(mk_BUILD_DIR) $(mk_OUT_DIR)
-#mk_SUB_LIBS     += $(__sub_libraries)
 
-DEPS_           ?= .mk.deps
-mk_DEPS          = $(mk_BUILD_DIR)/$(DEPS_)
+DEPS_              ?= .mk.deps
+mk_DEPS             = $(mk_BUILD_DIR)/$(notdir $(DEPS_))
+mk_DEPS_info        = $(notdir $(mk_pwd))  [$1] @ $(mk_now)
 
 mk_OUT_TYPE_list   += static shared exe
 mk_BUILD_MODE_list += $(mk_OUT_TYPE_list)
@@ -30,8 +30,13 @@ mk_tags             = $(foreach c,$(filter-out $1,$(mk_OPT_CLASS_list)),$($1.$(c
 mk_get              = $(or $($1),$(strip $(call mk_tags,$(notdir $1))),$($1_default))
 mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patternRE_opts,mk_FILE_PATTERNS_RE,$1)
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
-mk_variant_of       = $(mk_BUILD_DIR)/variant.$(notdir $1)
+mk_variant_of       = $(dir $1).mk.compilation.variant.$(notdir $1)#$(mk_BUILD_DIR)/variant.$(notdir $1)
 mk_chain_args       = $(subst ' -,' -$1 -,$2)
+mk_src_of           = $(call mk_grep,/$(basename $1).,$2)
+mk_srcdir_of        = $(dir $(call mk_src_of,$1,$2))
+mk_has_multi_src    = $(filter-out 1,$(call mk_count,$1,$2))
+mk_warn_multi_src   = $(strip $(foreach o,$1,$(if $(call mk_has_multi_src,$o,$1),$(call mk_warning,$3 $o: [$(call mk_src_of,$o,$2)]))))
+mk_chk_object_src   = $(call mk_warn_multi_src,$(notdir $(mk_OBJECTS)),$(mk_SOURCE_FILES),$(or $1,multiple source files for))
 
 any_source          = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
 any_source_in       = $(foreach t,$(mk_FILE_TYPES),$(wildcard $(call mk_norm_dir,$1)/*.$(t)))
@@ -135,60 +140,62 @@ mk_BINARY_TAG_frame    = $(if $(mk_BINARY_TAG),\
                               tail -$(call plus,$(mk_BINARY_TAG_len),2) \n\
                               head -$(mk_BINARY_TAG_len)\n,)
 
-
 #-- targets --
 
 .DEFAULT_GOAL = help
 .DELETE_ON_ERROR:
+.SECONDEXPANSION:
 
-.PHONY: $(mk_TARGET_list) $(mk_CFG_list) built depend
+.PHONY: $(mk_TARGET_list) $(mk_CFG_list) built
 
-built_doc = target for starting build process
-built: depend
-	# check subpackages ...
-	@for pkg in `$(mk_echo) '$(call mk_lsv,$(mk_SUBPACKAGES))'`; do  \
-		$(mk_echo) building subpackage $$pkg ...                      ;\
-		$(MAKE) -C $$pkg $(mk_MAKEFLAGS) built                        ;\
-	done
-	@$(MAKE) DEPS_=$(mk_DEPS) OUT_='$(mk_OUT_FILE)' DIRS_='$(mk_OUTPUT_DIRS)' OBJ_='$(mk_OBJECTS)' $(mk_OUT_FILE)
-
-
-depend_doc = build dependency list in $(mk_DEPS)
-depend:
-	# evaluate dependencies ...
+$(DEPS_): $(MAKEFILE_LIST)
+	@mkdir -p $(mk_BUILD_DIR) #< ensure build dir explicitly - can't do this by prerequisite, as its time stamp changes!
+	@touch $@                 #< just touch empty deps file to prevent endless make in project root
 	@$(if $(mk_SOURCE_FILES),$(eval __got_source_files := 1),)
 	@# NOTE: the following if-blocks are split to reduce the danger of exceeding the maximum cmd line limit!
 	@#
 	@# create build-directory, create links to variant files and
 	@#   make sure all mk_SOURCE_FILES exist BEFORE running dependency analysis ...
-	@if [ -n "$(__got_source_files)" ]; then                                      \
-		$(MAKE) --quiet $(mk_BUILD_DIR)/                                           ;\
-		for x in $(__link_variants); do $$x ; done                                 ;\
-		$(MAKE) --quiet $(mk_SOURCE_FILES)                                         ;\
+	@if [ -n "$(__got_source_files)" ]; then                                        \
+		$(call mk_log,\n-----\nbuilding deps $(call mk_DEPS_info,$@)\n-----,,renew ) ;\
+		for x in $(__link_variants); do $$x ; done                                   ;\
+		$(MAKE) --quiet $(mk_SOURCE_FILES)                                           ;\
 	fi
 	@#
 	@# run dependency analysis commands on mk_SOURCE_FILES
 	@if [ -n "$(__got_source_files)" ]; then                                      \
-		$(mk_echo) '=====\nstarted build @ '`date`'\n=====' > $(mk_LOG_FILE)       ;\
 		$(foreach cmd,$(cmd_depends),$(call $(cmd),$(mk_DEPS),$(mk_SOURCE_FILES))) ;\
 	fi
 
 
-$(OUT_): $(OBJ_)
-	@rm -f $(OUT_)
-	$(call mk_logged_cmd,$(cmd_LINK))
-	@if [ -e "$(OUT_)" ]; then                                 \
-		$(mk_echo) tagging binary ...                           ;\
-		$(mk_echo) -n '$(mk_BINARY_TAG_frame)' | tee -a $(OUT_) ;\
-		if [ -n "$(mk_OUT_UMASK)" ]; then                        \
-			chmod $(mk_OUT_UMASK) $(OUT_)                         ;\
+built_doc = target for starting build process
+built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS)) 
+	# check subpackages ...
+	@for pkg in `$(mk_echo) '$(call mk_lsv,$(mk_SUBPACKAGES))'`; do  \
+		$(mk_echo) building subpackage $$pkg ...                      ;\
+		$(MAKE) -C $$pkg $(mk_MAKEFLAGS) built                        ;\
+	done
+	@$(MAKE) DEPS_=$(mk_DEPS) OUT_='$(mk_OUT_FILE)' OBJ_='$(mk_OBJECTS)' $(mk_OUT_FILE)
+
+
+$(OUT_): $$(mk_OBJECTS)
+	$(eval __multi_src_objects := $(call mk_chk_object_src))
+	$(if $(__multi_src_objects),\
+	     $(call mk_prompt,WARNING: make considered only first of each list! Press ENTER to continue ...) \
+	     $(call mk_log, $(__multi_src_objects)))
+	@rm -f $@
+	@$(call mk_logged_cmd,$(cmd_LINK))
+	@if [ -e "$@" ]; then                                      \
+		if [ -n "$(mk_BINARY_TAG)" ]; then                       \
+			$(call mk_log,\ntagging binary $@ ...)                ;\
+			$(call mk_log,$(mk_BINARY_TAG_frame),-n) | tee -a $@  ;\
 		fi                                                      ;\
-		$(mk_echo) \\n=== built successful ===                  ;\
-		$(mk_echo) \\n  $(OUT_) \\n                             ;\
+		if [ -n "$(mk_OUT_UMASK)" ]; then                        \
+			chmod $(mk_OUT_UMASK) $@                              ;\
+		fi                                                      ;\
+		$(call mk_log,\n=== built successful ===\n)             ;\
 	fi
 	
-$(OBJ_): | $(sort $(DIRS_:%=%\/))
-
 
 $(mk_CFG_list):
 	@$(MAKE) CFG=$@ built
@@ -220,7 +227,7 @@ mk_OBJECTS        = $(call mk_object_of,$(mk_SOURCE_FILES))
 
 VPATH = $(subst $(mk_SPACE),:,$(mk_SOURCE_DIRS))
 
-sinclude $(DEPS_)
+-include $(DEPS_)
 
 endif # __mk_compilation_included
 

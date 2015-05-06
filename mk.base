@@ -12,7 +12,7 @@ sinclude $(__mk_root)gmsl/gmsl
 
 mk_PARAMETERS  += 
 mk_CFG_list    +=
-mk_TARGET_list += help echo.* eval.* value.* chkopts
+mk_TARGET_list += help echo.* eval.* value.*
 
 mk_NULL       :=
 mk_SPACE      := $(mk_NULL) #
@@ -22,7 +22,16 @@ mk_ANY        := %
 
 mk_ignoreErrors  := 2> /dev/null || :
 mk_echo          := /bin/echo -e
+mk_now            = $(shell date '+%d.%m.%Y %T')
+mk_prompt         = $(shell read -p "$(if $1,$1,press ENTER to continue) " x && echo "$$x")
+mk_pwd            = $(abspath .)
 mk_norm_dir       = $(patsubst %/,%,$1)
+mk_args           = $(strip $1$2$3$4$5$6$7$8$9)\n
+mk_error          = $(error $1)
+mk_warning        = $1\n$(warning $1)
+mk_count          = $(words $(filter $1,$2))
+mk_substring      = $(if $(findstring $1,$2),$2,)
+mk_grep           = $(strip $(foreach x,$2,$(call mk_substring,$1,$x)))
 mk_lower          = $(shell echo $(1) | tr A-Z a-z)#<                                          mk_lower( sTriNg )                 : string
 mk_upper          = $(shell echo $(1) | tr a-z A-Z)#<                                          mk_upper( sTriNg )                 : STRING
 mk_csv            = $(subst $(mk_SPACE),$(mk_COMMA),$(strip $1))#<                             mk_csv( v1 v2 ... )                : v1,v2,...
@@ -77,8 +86,7 @@ value.%:
 	@$(mk_echo) '$(subst \n,\\\\n,$(value $*))'
 
 
-chkopts_doc = check validity of given options
-chkopts:
+mk_tgt_chk_opts:
 	@$(mk_echo) '$(call __var_tab)' >> /dev/null
 
 

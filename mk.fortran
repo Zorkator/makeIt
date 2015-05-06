@@ -202,16 +202,16 @@ __fc_copy_pkg_libs   = $(if $(and $(mk_FC_LIBRARY_DIRS),$(mk_FC_LIBRARIES)),$(__
 __fc_cmd_compile     = $(fc) $(fc_c) $(call __fc_cflags_of,$(notdir $<)) $< $(fc_o) $@
 
 $(mk_BUILD_DIR)/%.o: %.f95
-	$(call mk_logged_cmd,$(__fc_cmd_compile))
+	@$(call mk_logged_cmd,$(__fc_cmd_compile))
 
 $(mk_BUILD_DIR)/%.o: %.f90
-	$(call mk_logged_cmd,$(__fc_cmd_compile))
+	@$(call mk_logged_cmd,$(__fc_cmd_compile))
 
 $(mk_BUILD_DIR)/%.o: %.for
-	$(call mk_logged_cmd,$(__fc_cmd_compile))
+	@$(call mk_logged_cmd,$(__fc_cmd_compile))
 
 $(mk_BUILD_DIR)/%.o: %.f
-	$(call mk_logged_cmd,$(__fc_cmd_compile))
+	@$(call mk_logged_cmd,$(__fc_cmd_compile))
 
 endif # __mk_fortran_included
 
