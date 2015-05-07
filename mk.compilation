@@ -32,11 +32,12 @@ mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patt
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
 mk_variant_of       = $(dir $1).mk.compilation.variant.$(notdir $1)#$(mk_BUILD_DIR)/variant.$(notdir $1)
 mk_chain_args       = $(subst ' -,' -$1 -,$2)
-mk_src_of           = $(call mk_grep,/$(basename $1).,$2)
-mk_srcdir_of        = $(dir $(call mk_src_of,$1,$2))
-mk_has_multi_src    = $(filter-out 1,$(call mk_count,$1,$2))
-mk_warn_multi_src   = $(strip $(foreach o,$1,$(if $(call mk_has_multi_src,$o,$1),$(call mk_warning,$3 $o: [$(call mk_src_of,$o,$2)]))))
-mk_chk_object_src   = $(call mk_warn_multi_src,$(notdir $(mk_OBJECTS)),$(mk_SOURCE_FILES),$(or $1,multiple source files for))
+mk_list_multisource = $(call ___object_source_of,$(notdir $(mk_OBJECTS)),$(call mk_path,$(mk_SOURCE_FILES)),,$(or $1,multiple source files for))
+___source_files_of  = $(call mk_grep,/$(basename $1).,$2)
+___object_source_of = $(strip \
+                        $(foreach o,$(sort $1),  \
+                          $(if $(filter-out 1,$(call mk_count,$o,$1)), \
+                            $(call $(or $3,mk_args),$4 $o: [$(call ___source_files_of,$o,$2)]))))
 
 any_source          = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
 any_source_in       = $(foreach t,$(mk_FILE_TYPES),$(wildcard $(call mk_norm_dir,$1)/*.$(t)))
@@ -179,11 +180,14 @@ built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
 
 
 $(OUT_): $$(mk_OBJECTS)
-	$(eval __multi_src_objects := $(call mk_chk_object_src))
-	$(if $(__multi_src_objects),\
-	     $(call mk_prompt,WARNING: make considered only first of each list! Press ENTER to continue ...) \
-	     $(call mk_log, $(__multi_src_objects)))
+	$(eval __multi_src_objects := $(call mk_list_multisource,. . . . >>))
+	@if [ -n "$(__multi_src_objects)" ]; then  \
+	  $(call mk_log,\nWARNING: Your makefile effectively specifies multiple source files yielding the same object[s]!                    \
+		              \n         For compiling the following objects make considered only the first source file\n $(__multi_src_objects)) ;\
+		read -p "press ENTER to continue"                                                                                                 ;\
+	fi
 	@rm -f $@
+	@$(call mk_log,\nlinking target ...)
 	@$(call mk_logged_cmd,$(cmd_LINK))
 	@if [ -e "$@" ]; then                                      \
 		if [ -n "$(mk_BINARY_TAG)" ]; then                       \
