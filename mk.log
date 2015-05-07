@@ -20,7 +20,7 @@ mk_LOG            = $(call mk_get,LOG)
 
 LOG_FILE_doc     ?= file for logging build messages.
 LOG_FILE_default  = $(mk_BUILD_DIR)/_log.txt
-mk_LOG_FILE       = $(call mk_get,LOG_FILE)
+mk_LOG_FILE       = $(abspath $(call mk_get,LOG_FILE))
 
 #-- targets ...
 

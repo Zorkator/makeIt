@@ -188,7 +188,7 @@ $(OUT_): $$(mk_OBJECTS)
 	fi
 	@rm -f $@
 	@$(call mk_log,\nlinking target ...)
-	@$(call mk_logged_cmd,$(cmd_LINK))
+	@$(cmd_LINK)
 	@if [ -e "$@" ]; then                                      \
 		if [ -n "$(mk_BINARY_TAG)" ]; then                       \
 			$(call mk_log,\ntagging binary $@ ...)                ;\
