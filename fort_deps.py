@@ -1,15 +1,17 @@
-
-"""Usage: fort_deps [((-o|-a) <outfile>)] [--fpp=<cmd>] [--objdir=<dir>] <file>...
+#!/usr/bin/env python
+"""Usage: fort_deps [((-a|-o) <outfile>)] [--verbose] [--fpp=<cmd>] [--objdir=<dir>] [--filelist=<listfile>] [<file>...]
 
 Generate Fortran dependencies.
-The result is output to stdout or given output file.
+The result is written to stdout or given output file.
 
 Options:
-	-o              overwrite given output file
-	-a              append to given output file
-	--fpp=<cmd>     preprocess each file by given command string <cmd>.
-	                Within <cmd> the placeholder {f} is replaced by the name of the file to preprocess.
-	--objdir=<dir>  replace directory of input files by given string <dir>.
+	-a                      append to given output file
+	-o                      overwrite given output file
+	--filelist=<listfile>   read list of (whitespace separated) input files from textfile <listfile>. Use '-' for reading from stdin.
+	--fpp=<cmd>             preprocess each file by given command string <cmd>.
+	                        Within <cmd> the placeholder {f} is replaced by the name of the file to preprocess.
+	--objdir=<dir>          replace directory of input files by given string <dir>.
+	--verbose               be verbose, print comment lines with process info.
 """
 
 import docopt, re, sys, shlex
@@ -28,16 +30,25 @@ class DepsCrawler(object):
 
 
 	def __init__( self, **kwArgs ):
+		if kwArgs['--verbose']: self._log = lambda *msg: self._out( 1, *msg )
+		else                  : self._log = lambda *msg: None
+
 		self._objDir = kwArgs['--objdir']
 		if   self._objDir is None: self._setObjDir = lambda f: f
 		elif self._objDir        : self._setObjDir = lambda f: _joinpath( self._objDir, _splitpath(f)[-1] )
 		else                     : self._setObjDir = lambda f: _splitpath(f)[-1]
 
+		fileList, fileSet = kwArgs['--filelist'], set( kwArgs['<file>'] )
+		if fileList:
+			with (fileList == '-' and sys.stdin) or open( fileList ) as listFile:
+				fileSet |= set( ' '.join( listFile.readlines() ).split() )
+
+		self._log( "processed files:", *fileSet )
 		self._fileTab, self._modTab = dict(), dict()
-		for fileName in kwArgs['<file>']:
+		for fileName in fileSet:
 			try  : self.scanFile( fileName, kwArgs['--fpp'] )
 			except IOError as e:
-				print "%s skipped: %s" % (fileName, e)
+				self._out( 2, "WARNING: %s skipped: %s" % (fileName, e) )
 
 
 	def scanFile( self, fileName, fpp ):
@@ -51,6 +62,10 @@ class DepsCrawler(object):
 					mod = self._scanMod( line )
 					if mod:
 						self._modTab[ mod.groups()[0].lower() ] = fileName
+
+
+	def _out( self, ch, *msg ):
+		(None, sys.stdout, sys.stderr)[ch].write( '# %s\n' % '\n# '.join( msg ) )
 
 
 	def _obj( self, fileName ):
