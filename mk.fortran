@@ -18,7 +18,7 @@ mk_FC_list       += gfortran ifort
 mk_ARCH_list     += 64 32
 cmd_LINK         ?= $(__fc_cmd_link.$(mk_OUT_TYPE))#  < proposed linker command
 cmd_FC_version    = $(shell $(fc) $(fc_version) 2>&1 | sed -ne 's/\([0-9]\+\.[0-9.]\+\)/\1/p')
-cmd_FC_depends    = python $(__mk_root)fort_deps.py -o $1 $2 --objdir=$(mk_BUILD_DIR)
+cmd_FC_depends    = python $(__mk_root)fort_deps.py -o $1 --filelist=$2 --objdir=$(mk_BUILD_DIR)
 cmd_depends      += cmd_FC_depends
 
 #-- user parameters --
@@ -210,22 +210,22 @@ define fc_collect_objects
 endef
 
 define __fc_cmd_link.exe
-	$(call fc_collect_objects,$(mk_FC_OBJECT_ARCHIVE)) &&\
-	$(call mk_logged_cmd,$(fc) $(fc_o) $(mk_OUT_FILE) $(__fc_lflags) $(mk_BUILD_DIR)/$(mk_FC_OBJECT_ARCHIVE) $(__fc_libraries) $(mk_FC_LINK_OTHER)) &&\
+	$(call fc_collect_objects,$(mk_FC_OBJECT_ARCHIVE))
+	$(call mk_logged_cmd,$(fc) $(fc_o) $(mk_OUT_FILE) $(__fc_lflags) $(mk_BUILD_DIR)/$(mk_FC_OBJECT_ARCHIVE) $(__fc_libraries) $(mk_FC_LINK_OTHER))
 	$(__fc_copy_pkg_libs)
 endef
 
 define __fc_cmd_link.shared
-	$(call fc_collect_objects,$(mk_FC_OBJECT_ARCHIVE)) &&\
-	$(call mk_logged_cmd,$(fc) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_lflags) $(call fc_lnk_archives,$(mk_BUILD_DIR)/$(mk_FC_OBJECT_ARCHIVE)) $(__fc_libraries) $(mk_FC_LINK_OTHER)) &&\
-	$(__fc_symlnk_so) &&\
-	$(__fc_copy_mods) &&\
+	$(call fc_collect_objects,$(mk_FC_OBJECT_ARCHIVE))
+	$(call mk_logged_cmd,$(fc) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_lflags) $(call fc_lnk_archives,$(mk_BUILD_DIR)/$(mk_FC_OBJECT_ARCHIVE)) $(__fc_libraries) $(mk_FC_LINK_OTHER))
+	$(__fc_symlnk_so)
+	$(__fc_copy_mods)
 	$(__fc_copy_pkg_libs)
 endef
 
 define __fc_cmd_link.static
-	$(call fc_collect_objects,$(abspath $(mk_OUT_FILE))) &&\
-	$(__fc_copy_mods) &&\
+	$(call fc_collect_objects,$(abspath $(mk_OUT_FILE)))
+	$(__fc_copy_mods)
 	$(__fc_copy_pkg_libs)
 endef
 

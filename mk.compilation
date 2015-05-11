@@ -16,6 +16,7 @@ mk_OUTPUT_DIRS  += $(mk_BUILD_DIR) $(mk_OUT_DIR)
 DEPS_              ?= .mk.deps
 mk_DEPS             = $(mk_BUILD_DIR)/$(notdir $(DEPS_))
 mk_DEPS_info        = $(notdir $(mk_pwd))  [$1] @ $(mk_now)
+mk_SOURCE_LIST_FILE = $(mk_BUILD_DIR)/.mk.sourcelist
 
 mk_OUT_TYPE_list   += static shared exe
 mk_BUILD_MODE_list += $(mk_OUT_TYPE_list)
@@ -32,7 +33,7 @@ mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patt
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
 mk_variant_of       = $(dir $1).mk.compilation.variant.$(notdir $1)#$(mk_BUILD_DIR)/variant.$(notdir $1)
 mk_chain_args       = $(subst ' -,' -$1 -,$2)
-mk_list_multisource = $(call ___object_source_of,$(notdir $(mk_OBJECTS)),$(call mk_path,$(mk_SOURCE_FILES)),,$(or $1,multiple source files for))
+mk_list_multisource = $(call ___object_source_of,$(notdir $(mk_OBJECTS)),$(call mk_path,$(mk_SOURCE_FILES)),$2,$(or $1,multiple source files for))
 ___source_files_of  = $(call mk_grep,/$(basename $1).,$2)
 ___object_source_of = $(strip \
                         $(foreach o,$(sort $1),  \
@@ -54,6 +55,13 @@ svn_revision       := $(shell svn info | sed -ne 's/^Revision: //p')
 svn_modified       := $(shell svn st | grep "^M " | awk '{print $$NF}')
 svn_modified_tab    = $(call mk_join,\\\n,$(svn_modified))
 
+define mk_packages
+$(if $(mk_SUBPACKAGES),\
+	@$(mk_echo) ''$(call mk_frame,make $1 @ subpackages)         \
+	$(call mk_submake,$1 $(mk_MAKEFLAGS) -C,$(mk_SUBPACKAGES),1) \
+	@$(mk_echo) )
+endef
+
 
 #-- user parameters --
 
@@ -72,6 +80,11 @@ mk_CFG                 = $(call mk_get,CFG)
 TAG_doc               ?= string for tagging build directory.
 TAG_default            = $(subst $(mk_SPACE),.,$(foreach t,$(mk_OPT_list),$(mk_$t)))
 mk_TAG                 = $(call mk_get,TAG)
+
+mk_BUILT_TYPE_NAME     = $(__built_type_$(mk_OUT_TYPE))
+__built_type_exe       = APPLICATION
+__built_type_shared    = SHARED_LIB
+__built_type_static    = STATIC_LIB
 
 BUILD_MODE_doc        ?= mode for building object files: $(call mk_opt_set,BUILD_MODE)
 BUILD_MODE_default     = $(mk_OUT_TYPE)
@@ -97,6 +110,11 @@ OUT_FILE_NAME_doc     ?= the file name of the final result
 OUT_FILE_NAME_default  = $(__out_file_name)
 mk_OUT_FILE_NAME       = $(call mk_get,OUT_FILE_NAME)
 mk_OUT_FILE_NAME_SO    = $(call mk_get,OUT_FILE_NAME)$(mk_MAYOR)$(mk_MINOR)
+__out_file_name        = $(call __out_file_name_of,$(mk_OUT_NAME).$(mk_TAG),$(mk_OUT_TYPE))
+__out_file_name_of     = $(call __out_file_name_$2,$1)
+__out_file_name_exe    = $(1)
+__out_file_name_static = lib$(1).a
+__out_file_name_shared = lib$(1).so
 
 OUT_FILE_doc          ?= path and file name of the final result
 OUT_FILE_default       = $(mk_OUT_DIR)/$(mk_OUT_FILE_NAME)
@@ -120,9 +138,12 @@ mk_IGNORE_DIRS         = $(call mk_get,IGNORE_DIRS)
 
 SOURCE_FILES.%        += $(scan_source)
 mk_SOURCE_FILES        = $(filter-out $(mk_IGNORE_FILES),$(call mk_get,SOURCE_FILES) $(mk_VARIANT_SOURCE))
+mk_IGNORE_FILES        = $(call mk_get,IGNORE_FILES)
 mk_VARIANT_FILES       = $(call mk_get,VARIANT_FILES)
 mk_VARIANT_SOURCE      = $(call map,mk_variant_of,$(mk_VARIANT_FILES))
-mk_IGNORE_FILES        = $(call mk_get,IGNORE_FILES)
+mk_VARIANT_PAIRS       = $(foreach f,$(mk_VARIANT_FILES),$(abspath  $f) $(call mk_variant_of,$f))
+
+mk_OBJECTS             = $(call mk_object_of,$(mk_SOURCE_FILES))
 
 mk_CLEARED_FILES      += $(CLEARED_FILES) $(mk_VARIANT_SOURCE)
 
@@ -131,8 +152,6 @@ mk_SUBPACKAGES         = $(call mk_get,SUBPACKAGES)
 
 mk_sub_makeflag        = $(if $(call seq,$1,BUILD_MODE),$(subst exe,static,$(mk_$1)),$(mk_$1))
 mk_MAKEFLAGS           = $(foreach t,$(mk_OPT_CLASSES),$t=$(call mk_sub_makeflag,$t)) OUT_DIR=$(abspath $(mk_BUILD_DIR)) OUT_TYPE=static
-
-
 
 mk_BINARY_TAG          = $(call mk_get,BINARY_TAG)
 mk_BINARY_TAG_len      = $(call mk_lines,$(mk_BINARY_TAG))
@@ -144,60 +163,56 @@ mk_BINARY_TAG_frame    = $(if $(mk_BINARY_TAG),\
 #-- targets --
 
 .DEFAULT_GOAL = help
-.DELETE_ON_ERROR:
 .SECONDEXPANSION:
-
+.DELETE_ON_ERROR:
 .PHONY: $(mk_TARGET_list) $(mk_CFG_list) built
 
+
 $(DEPS_): $(MAKEFILE_LIST)
-	@mkdir -p $(mk_BUILD_DIR) #< ensure build dir explicitly - can't do this by prerequisite, as its time stamp changes!
-	@touch $@                 #< just touch empty deps file to prevent endless make in project root
-	@$(if $(mk_SOURCE_FILES),$(eval __got_source_files := 1),)
-	@# NOTE: the following if-blocks are split to reduce the danger of exceeding the maximum cmd line limit!
-	@#
-	@# create build-directory, create links to variant files and
-	@#   make sure all mk_SOURCE_FILES exist BEFORE running dependency analysis ...
-	@if [ -n "$(__got_source_files)" ]; then                                        \
-		$(call mk_log,\n-----\nbuilding deps $(call mk_DEPS_info,$@)\n-----,,renew ) ;\
-		for x in $(__link_variants); do $$x ; done                                   ;\
-		$(MAKE) --quiet $(mk_SOURCE_FILES)                                           ;\
+	@mkdir -p $(mk_BUILD_DIR) #<  ensure build dir explicitly - can't do this by prerequisite, as its time stamp changes!
+	@touch $@                 #<  just touch empty deps file to prevent endless make in project root
+	$(eval ___at_work := $(call seq,$(call mk_norm_dir,$(dir $@)),$(mk_BUILD_DIR)))
+	@# create links to variant files ...
+	$(if $(___at_work),$(call mk_link,$(mk_VARIANT_PAIRS)))
+	@# write source file list to temporary file
+	@#   and make sure all source files exist BEFORE running dependency analysis ...
+	$(eval ___src := $(mk_SOURCE_FILES))
+	@$(if $(and $(___at_work),$(___src)),                 \
+	  	$(call mk_file,$(mk_SOURCE_LIST_FILE),$(___src))  \
+	   	$(call mk_submake,--quiet,$(___src)))
+	@# if source list file exists and is not empty, start dependency analysis ...
+	@if [ -n "$(___at_work)" -a -s "$(mk_SOURCE_LIST_FILE)" ]; then \
+		$(call mk_log,'$(call mk_frame,building deps $(call mk_DEPS_info,$@))',,renew) ;\
+		$(foreach cmd,$(cmd_depends),$(call $(cmd),$(mk_DEPS),$(mk_SOURCE_LIST_FILE))) ;\
 	fi
-	@#
-	@# run dependency analysis commands on mk_SOURCE_FILES
-	@if [ -n "$(__got_source_files)" ]; then                                      \
-		$(foreach cmd,$(cmd_depends),$(call $(cmd),$(mk_DEPS),$(mk_SOURCE_FILES))) ;\
+	@# check and warn if multiple source files map to a single object file ...
+	$(eval ___multi_src_objects := $(call mk_list_multisource,. . . . >>))
+	@if [ -n "$(and $(___at_work),$(___multi_src_objects))" ]; then  \
+  	$(call mk_log,\nWARNING: Your makefile effectively specifies multiple source files yielding the same object[s]!                        \
+	  	            \n         For compiling the following objects make will consider only the first source file\n $(___multi_src_objects)) ;\
+		read -p "press ENTER to continue"                                                                                                     ;\
 	fi
 
 
 built_doc = target for starting build process
-built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS)) 
-	# check subpackages ...
-	@for pkg in `$(mk_echo) '$(call mk_lsv,$(mk_SUBPACKAGES))'`; do  \
-		$(mk_echo) building subpackage $$pkg ...                      ;\
-		$(MAKE) -C $$pkg $(mk_MAKEFLAGS) built                        ;\
-	done
-	@$(MAKE) DEPS_=$(mk_DEPS) OUT_='$(mk_OUT_FILE)' OBJ_='$(mk_OBJECTS)' $(mk_OUT_FILE)
+built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
+	$(call mk_packages,built)
+	@$(MAKE) DEPS_=$(mk_DEPS) OUT_='$(mk_OUT_FILE)' $(mk_OUT_FILE)
 
 
 $(OUT_): $$(mk_OBJECTS)
-	$(eval __multi_src_objects := $(call mk_list_multisource,. . . . >>))
-	@if [ -n "$(__multi_src_objects)" ]; then  \
-	  $(call mk_log,\nWARNING: Your makefile effectively specifies multiple source files yielding the same object[s]!                    \
-		              \n         For compiling the following objects make considered only the first source file\n $(__multi_src_objects)) ;\
-		read -p "press ENTER to continue"                                                                                                 ;\
-	fi
 	@rm -f $@
-	@$(call mk_log,\nlinking target ...)
+	@$(call mk_log,'$(call mk_frame,linking target)')
 	@$(cmd_LINK)
 	@if [ -e "$@" ]; then                                      \
 		if [ -n "$(mk_BINARY_TAG)" ]; then                       \
-			$(call mk_log,\ntagging binary $@ ...)                ;\
+			$(call mk_log,'$(call mk_frame,tagging binary $@)')   ;\
 			$(call mk_log,$(mk_BINARY_TAG_frame),-n) | tee -a $@  ;\
 		fi                                                      ;\
 		if [ -n "$(mk_OUT_UMASK)" ]; then                        \
 			chmod $(mk_OUT_UMASK) $@                              ;\
 		fi                                                      ;\
-		$(call mk_log,\n=== built successful ===\n)             ;\
+		$(call mk_log,'$(call mk_frame,built successfully)')    ;\
 	fi
 	
 
@@ -207,27 +222,9 @@ $(mk_CFG_list):
 
 clean_doc = clear build directory [$(mk_BUILD_DIR)] by removing object files
 clean:
+	$(call mk_packages,clean)
 	@rm -f $(mk_CLEARED_FILES) $(mk_LOG_FILE) $(mk_DEPS)
-	@for pkg in `$(mk_echo) '$(call mk_lsv,$(mk_SUBPACKAGES))'`; do  \
-		$(mk_echo) cleaning subpackage $$pkg ...                      ;\
-		$(MAKE) -C $$pkg clean                                        ;\
-	done
 
-#-- set/derive private variables/lists --
-
-__out_file_name_static = lib$(1).a
-__out_file_name_shared = lib$(1).so
-__out_file_name_exe    = $(1)
-__out_file_name_of     = $(call __out_file_name_$2,$1)
-__out_file_name        = $(call __out_file_name_of,$(mk_OUT_NAME).$(mk_TAG),$(mk_OUT_TYPE))
-
-__built_type_exe       = APPLICATION
-__built_type_shared    = SHARED_LIB
-__built_type_static    = STATIC_LIB
-mk_BUILT_TYPE_NAME     = $(__built_type_$(mk_OUT_TYPE))
-
-__link_variants   = $(foreach f,$(mk_VARIANT_FILES),'ln -fs $(abspath  $f) $(call mk_variant_of,$f)')
-mk_OBJECTS        = $(call mk_object_of,$(mk_SOURCE_FILES))
 
 VPATH = $(subst $(mk_SPACE),:,$(mk_SOURCE_DIRS))
 
