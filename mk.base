@@ -13,7 +13,7 @@ __cmd_max_args := 512
 
 mk_PARAMETERS  += 
 mk_CFG_list    +=
-mk_TARGET_list += help echo.* eval.* value.*
+mk_TARGET_list += help echo,* eval,* value,*
 
 mk_NULL       :=
 mk_SPACE      := $(mk_NULL) #
@@ -95,24 +95,24 @@ help:
               '$(__var_tab)'
 
 
-help.*_doc = echo value of make variable and specify its origin, e.g. make origin.CFG
-help.%:
+help,*_doc = echo value of make variable and specify its origin, e.g. make origin.CFG
+help,%:
 	@$(mk_echo) $* = [$(origin $*)] $($*)
 
 
-echo.*_doc = evaluate value of make variable 
-echo.%:
+echo,*_doc = evaluate value of make variable 
+echo,%:
 	@$(mk_echo) "$(subst \n,\\n,$($*))"
 
 
-eval.*_doc = evaluate a make variable by calling with argument, e.g. make eval._mkFunc,arg. Separate directories by \\\\.
-__eval     = $(call $(firstword $1),$(subst \,/,$(wordlist 2,99,$1)))
-eval.%:
+eval,*_doc = evaluate a make variable by calling with argument, e.g. make eval._mkFunc,arg. Separate directories by \\\\.
+__eval     = $(call $(firstword $1),$(subst \,/,$(wordlist 2,$(words $1),$1)))
+eval,%:
 	@$(mk_echo) '$(subst \n,\\n,$(call __eval,$(call mk_ssv,$*)))'
 
 
-value.*_doc = show value of make variable
-value.%:
+value,*_doc = show value of make variable
+value,%:
 	@$(mk_echo) '$(subst \n,\\\\n,$(value $*))'
 
 
