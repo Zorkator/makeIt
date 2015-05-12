@@ -79,7 +79,7 @@ endef
 # $(call mk_frame,STRING)
 define mk_frame
 $(eval ___line := $(subst x ,-,$(call int_encode,$(call plus,4,$(call strlen,$1))) ))\
-'$(___line)\n [ $1 ]\n $(___line)'
+'$(___line)\n ] $1 [\n $(___line)'
 endef
 
 #-- targets --

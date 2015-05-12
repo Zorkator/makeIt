@@ -188,9 +188,9 @@ $(DEPS_): $(MAKEFILE_LIST)
 	@# check and warn if multiple source files map to a single object file ...
 	$(eval ___multi_src_objects := $(call mk_list_multisource,. . . . >>))
 	@if [ -n "$(and $(___at_work),$(___multi_src_objects))" ]; then  \
-  	$(call mk_log,\nWARNING: Your makefile effectively specifies multiple source files yielding the same object[s]!                        \
-	  	            \n         For compiling the following objects make will consider only the first source file\n $(___multi_src_objects)) ;\
-		read -p "press ENTER to continue"                                                                                                     ;\
+  	$(call mk_log,\nWARNING: Your makefile effectively specifies multiple source files yielding the same object!                              \
+	  	            \n         For compiling the following objects make will consider only the first source file:\n\n $(___multi_src_objects)) ;\
+		read -p "press ENTER to continue"                                                                                                        ;\
 	fi
 
 
@@ -204,6 +204,7 @@ $(OUT_): $$(mk_OBJECTS)
 	@rm -f $@
 	@$(call mk_log,'$(call mk_frame,linking target)')
 	@$(cmd_LINK)
+	@$(call mk_log)
 	@if [ -e "$@" ]; then                                      \
 		if [ -n "$(mk_BINARY_TAG)" ]; then                       \
 			$(call mk_log,'$(call mk_frame,tagging binary $@)')   ;\
@@ -212,6 +213,7 @@ $(OUT_): $$(mk_OBJECTS)
 		if [ -n "$(mk_OUT_UMASK)" ]; then                        \
 			chmod $(mk_OUT_UMASK) $@                              ;\
 		fi                                                      ;\
+		$(call mk_log)                                          ;\
 		$(call mk_log,'$(call mk_frame,built successfully)')    ;\
 	fi
 	
