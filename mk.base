@@ -46,40 +46,41 @@ mk_var            = $(if $(call mk_defined,$1),\\$($1),)#<                      
 mk_val            = $(or $($1),$($1_default))#<                                                mk_val( varId )                    : val | default | ''
 mk_map            = $(foreach i,$2,$(call $1,$i))#<                                            mk_map( func, v1 v2 ... )          : res1 res2 ...
 mk_lines          = $(shell $(mk_echo) "$1" | wc -l)#<                                         mk_lines( string )                 : num of lines
-mk_opt_set        = {$(call mk_csv,$(mk_$1_list))}#<                                           mk_opt_set( optID )                : string of valid options
+mk_opt_set        = {$(call mk_csv,$(call uniq,$(mk_$1_list)))}#<                              mk_opt_set( optID )                : base name of option list
 
-mk_match          = ${shell case $1 in $2) echo '$(value 3)';; *) ;; esac}#<                   mk_match( text, pattern, res )   : res | ''
+mk_match          = ${shell case $1 in $2) echo '$(value 3)';; *) ;; esac}#<                   mk_match( text, pattern, res )     : res | ''
 mk_matchRE        = ${shell if expr $1 : $2 > /dev/null; then echo '$(value 3)'; fi}#<         mk_matchRE( text, re_pattern, res ): res | ''
 mk_pattern_opts   = $(foreach p,$($1),$(call mk_match,$2,$p,$($p)))#<                          mk_pattern_opts( PATTERN_list, text )
 mk_patternRE_opts = $(foreach p,$($1),$(call mk_matchRE,$2,$p,$($p)))#<                        mk_patternRE_opts( PATTERN_RE_list, text )
 
 # $(call mk_xargs,COMMAND,LIST,NUM)
 define mk_xargs
-$(eval ___next := $(call plus,1,$3))
-$1 $(wordlist 1,$3,$2)
-$(if $(word $(___next),$2),$(call mk_xargs,$1,$(wordlist $(___next),$(words $2),$2),$3))
+	$(eval ___num  := $(or $3,$(__cmd_max_args)))
+	$(eval ___next := $(call plus,1,$(___num)))
+	$1 $(wordlist 1,$(___num),$2)
+	$(if $(word $(___next),$2),$(call mk_xargs,$1,$(wordlist $(___next),$(words $2),$2),$(___num)))
 endef
 
 # $(call mk_file,FILENAME,LIST,[append])
 define mk_file
-: $(if $(and $2,$3),,>$1)
-$(call mk_xargs,printf "%s\n" >>$1,$2,$(__cmd_max_args))
+	: $(if $(and $2,$3),,>$1)
+	$(call mk_xargs,printf "%s\n" >>$1,$2,$(__cmd_max_args))
 endef
 
 # $(call mk_submake,ARGS,TARGETLIST,[NUM])
 define mk_submake
-$(if $2,$(call mk_xargs,$(MAKE) $1,$2,$(or $3,$(__cmd_max_args))))
+	$(if $2,$(call mk_xargs,$(MAKE) $1,$2,$(or $3,$(__cmd_max_args))))
 endef
 
 # $(call mk_link,TGT_NAME_PAIRS)
 define mk_link
-$(if $(call gt,$(words $1),1),$(call mk_xargs,ln -sf,$1,2))
+	$(if $(call gt,$(words $1),1),$(call mk_xargs,ln -sf,$1,2))
 endef
 
 # $(call mk_frame,STRING)
 define mk_frame
-$(eval ___line := $(subst x ,-,$(call int_encode,$(call plus,4,$(call strlen,$1))) ))\
-'$(___line)\n ] $1 [\n $(___line)'
+	$(eval ___line := $(subst x ,-,$(call int_encode,$(call plus,4,$(call strlen,$1))) ))\
+	'$(___line)\n ] $1 [\n $(___line)'
 endef
 
 #-- targets --

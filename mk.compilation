@@ -17,6 +17,8 @@ DEPS_              ?= .mk.deps
 mk_DEPS             = $(mk_BUILD_DIR)/$(notdir $(DEPS_))
 mk_DEPS_info        = $(notdir $(mk_pwd))  [$1] @ $(mk_now)
 mk_SOURCE_LIST_FILE = $(mk_BUILD_DIR)/.mk.sourcelist
+mk_OBJECT_ARCHIVE   = .mk.objects.a
+
 
 mk_OUT_TYPE_list   += static shared exe
 mk_BUILD_MODE_list += $(mk_OUT_TYPE_list)
@@ -62,6 +64,24 @@ $(if $(mk_SUBPACKAGES),\
 	@$(mk_echo) )
 endef
 
+# $(call mk_symlink_so,SO_FILENAME)
+define mk_symlink_so
+	$(call mk_link,$(notdir $1) $(basename $1) $(notdir $1) $(basename $(basename $1)))
+endef
+
+# $(call mk_collect_so,LIB_DIRS,SO_NAMES[,TARGET_DIR])
+define mk_collect_so
+	$(eval ___find_pattern := $(subst ' -,' -or -,$(foreach l,$2,-wholename '*$l*.so*')))
+	$(if $(and $1,$2),\
+    find $1 \( $(___find_pattern) \) -and -not -path '*/.*' -exec cp -a {} $(or $3,$(mk_OUT_DIR)) \; $(mk_ignoreErrors))
+endef
+
+# $(call mk_archive_objects,ARCHIVE)
+define mk_archive_objects
+	cd $(mk_BUILD_DIR) &&\
+		$(call mk_logged_cmd,ar rs $1 $(sort $(notdir $(mk_OBJECTS)))) &&\
+	cd -
+endef
 
 #-- user parameters --
 
@@ -70,7 +90,7 @@ debug_doc             ?= shortcut target for building with debug options. Equiva
 release_doc           ?= shortcut target for building with optimization and without debug options. Equivalent to: "make built CFG=release"
 
 ARCH_doc              ?= architecture id: $(call mk_opt_set,ARCH)
-ARCH_default           = $(firstword $(mk_ARCH_list))
+ARCH_default           = $(firstword $(call uniq,$(mk_ARCH_list)))
 mk_ARCH                = $(call mk_get,ARCH)
 
 CFG_doc               ?= current build configuration: $(call mk_opt_set,CFG)
