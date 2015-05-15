@@ -47,6 +47,10 @@ mk_val            = $(or $($1),$($1_default))#<                                 
 mk_map            = $(foreach i,$2,$(call $1,$i))#<                                            mk_map( func, v1 v2 ... )          : res1 res2 ...
 mk_lines          = $(shell $(mk_echo) "$1" | wc -l)#<                                         mk_lines( string )                 : num of lines
 mk_opt_set        = {$(call mk_csv,$(call uniq,$(mk_$1_list)))}#<                              mk_opt_set( optID )                : base name of option list
+mk_unsigned       = $(patsubst -%,%,$1)#<                                                      mk_unsigned( -v1 v2 -v3 )          : v1 v2 v3
+mk_disabled       = $(patsubst -%,%,$(filter -%,$1))#<                                         mk_disabled( -v1 v2 -v3 )          : v1 v3
+mk_enabled        = $(filter-out $(call mk_disabled,$1),$(call mk_unsigned,$1))#<              mk_enabled( -v1 v2 v3 )            : v2
+mk_selective      = $(call uniq,$(call mk_enabled,$1))#<                                       mk_selective( v1 v2 v3 -v1 )       : v2 v3
 
 mk_match          = ${shell case $1 in $2) echo '$(value 3)';; *) ;; esac}#<                   mk_match( text, pattern, res )     : res | ''
 mk_matchRE        = ${shell if expr $1 : $2 > /dev/null; then echo '$(value 3)'; fi}#<         mk_matchRE( text, re_pattern, res ): res | ''

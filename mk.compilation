@@ -17,13 +17,11 @@ DEPS_              ?= .mk.deps
 mk_DEPS             = $(mk_BUILD_DIR)/$(notdir $(DEPS_))
 mk_DEPS_info        = $(notdir $(mk_pwd))  [$1] @ $(mk_now)
 mk_SOURCE_LIST_FILE = $(mk_BUILD_DIR)/.mk.sourcelist
-mk_OBJECT_ARCHIVE   = .mk.objects.a
-
 
 mk_OUT_TYPE_list   += static shared exe
 mk_BUILD_MODE_list += $(mk_OUT_TYPE_list)
 mk_ARCH_list       +=
-mk_CFG_list         = $(CONFIGURATIONS)
+mk_CFG_list         = $(call mk_selective,$(__builtin_CFGs) $(CONFIGURATIONS))
 mk_FILE_PATTERNS    = $(sort $(FILE_PATTERNS) $(mk_FILE_TYPES:%=*.%))
 mk_FILE_PATTERNS_RE = $(sort $(FILE_PATTERNS_RE))
 mk_OPT_list         = $(filter-out BUILD_MODE,$(mk_OPT_CLASSES))
@@ -33,7 +31,7 @@ mk_tags             = $(foreach c,$(filter-out $1,$(mk_OPT_CLASS_list)),$($1.$(c
 mk_get              = $(or $($1),$(strip $(call mk_tags,$(notdir $1))),$($1_default))
 mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patternRE_opts,mk_FILE_PATTERNS_RE,$1)
 mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
-mk_variant_of       = $(dir $1).mk.compilation.variant.$(notdir $1)#$(mk_BUILD_DIR)/variant.$(notdir $1)
+mk_variant_of       = $(dir $1).variant.$(notdir $1)# < build rules urge us to link in source directory :-(
 mk_chain_args       = $(subst ' -,' -$1 -,$2)
 mk_list_multisource = $(call ___object_source_of,$(notdir $(mk_OBJECTS)),$(call mk_path,$(mk_SOURCE_FILES)),$2,$(or $1,multiple source files for))
 ___source_files_of  = $(call mk_grep,/$(basename $1).,$2)
@@ -61,7 +59,7 @@ define mk_packages
 $(if $(mk_SUBPACKAGES),\
 	@$(mk_echo) ''$(call mk_frame,make $1 @ subpackages)         \
 	$(call mk_submake,$1 $(mk_MAKEFLAGS) -C,$(mk_SUBPACKAGES),1) \
-	@$(mk_echo) )
+	@$(mk_echo))
 endef
 
 # $(call mk_symlink_so,SO_FILENAME)
@@ -79,18 +77,19 @@ endef
 # $(call mk_archive_objects,ARCHIVE)
 define mk_archive_objects
 	cd $(mk_BUILD_DIR) &&\
-		$(call mk_logged_cmd,ar rs $1 $(sort $(notdir $(mk_OBJECTS)))) &&\
+		$(call mk_logged_cmd,ar rs $(abspath $1) $(sort $(notdir $(mk_OBJECTS)))) &&\
 	cd -
 endef
 
 #-- user parameters --
 
-CONFIGURATIONS        ?= debug release
+# prepare built in CONFIGURATIONS debug and release
+__builtin_CFGs        := debug release
 debug_doc             ?= shortcut target for building with debug options. Equivalent to: "make built CFG=debug"
 release_doc           ?= shortcut target for building with optimization and without debug options. Equivalent to: "make built CFG=release"
 
 ARCH_doc              ?= architecture id: $(call mk_opt_set,ARCH)
-ARCH_default           = $(firstword $(call uniq,$(mk_ARCH_list)))
+ARCH_default           = $(firstword $(call mk_selective,$(mk_ARCH_list)))
 mk_ARCH                = $(call mk_get,ARCH)
 
 CFG_doc               ?= current build configuration: $(call mk_opt_set,CFG)
@@ -132,9 +131,9 @@ mk_OUT_FILE_NAME       = $(call mk_get,OUT_FILE_NAME)
 mk_OUT_FILE_NAME_SO    = $(call mk_get,OUT_FILE_NAME)$(mk_MAYOR)$(mk_MINOR)
 __out_file_name        = $(call __out_file_name_of,$(mk_OUT_NAME).$(mk_TAG),$(mk_OUT_TYPE))
 __out_file_name_of     = $(call __out_file_name_$2,$1)
-__out_file_name_exe    = $(1)
-__out_file_name_static = lib$(1).a
-__out_file_name_shared = lib$(1).so
+__out_file_name_exe    = $1
+__out_file_name_static = lib$1.a
+__out_file_name_shared = lib$1.so
 
 OUT_FILE_doc          ?= path and file name of the final result
 OUT_FILE_default       = $(mk_OUT_DIR)/$(mk_OUT_FILE_NAME)
@@ -164,6 +163,10 @@ mk_VARIANT_SOURCE      = $(call map,mk_variant_of,$(mk_VARIANT_FILES))
 mk_VARIANT_PAIRS       = $(foreach f,$(mk_VARIANT_FILES),$(abspath  $f) $(call mk_variant_of,$f))
 
 mk_OBJECTS             = $(call mk_object_of,$(mk_SOURCE_FILES))
+
+OBJECT_ARCHIVE        ?= $(mk_BUILD_DIR)/.mk.objects.a
+OBJECT_ARCHIVE.static  = $(mk_OUT_FILE)
+mk_OBJECT_ARCHIVE      = $(or $(OBJECT_ARCHIVE.$(mk_OUT_TYPE)),$(OBJECT_ARCHIVE))
 
 mk_CLEARED_FILES      += $(CLEARED_FILES) $(mk_VARIANT_SOURCE)
 
@@ -223,6 +226,7 @@ built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
 $(OUT_): $$(mk_OBJECTS)
 	@rm -f $@
 	@$(call mk_log,'$(call mk_frame,linking target)')
+	@$(call mk_archive_objects,$(mk_OBJECT_ARCHIVE))
 	@$(cmd_LINK)
 	@$(call mk_log)
 	@if [ -e "$@" ]; then                                      \
