@@ -10,7 +10,7 @@ include $(dir $(lastword $(MAKEFILE_LIST)))mk.compilation
 mk_PARAMETERS    += FC FC_MOD_DIR FC_PP_DEFINES FC_INCLUDE_DIRS FC_FLAGS FC_CFLAGS FC_LFLAGS FC_LIBRARY_DIRS FC_LIBRARIES FC_LINK_OTHER
 mk_OPT_CLASSES   += FC
 mk_TARGET_list   += fpp,*
-mk_FILE_TYPES    += f95 f90 for f
+mk_FILE_TYPES    += $(__fc_file_types)
 mk_OUTPUT_DIRS   += $(FC_MOD_DIR)
 mk_CLEARED_FILES += $(mk_BUILD_DIR)/*.o $(mk_BUILD_DIR)/*.mod
 
@@ -18,8 +18,15 @@ mk_FC_list       += gfortran ifort
 mk_ARCH_list     += 64 32
 cmd_LINK         ?= $(fc_cmd_link.$(mk_OUT_TYPE))#  < proposed linker command
 cmd_FC_version    = $(shell $(fc) $(fc_version) 2>&1 | sed -ne 's/\([0-9]\+\.[0-9.]\+\)/\1/p')
-cmd_FC_depends    = python $(__mk_root)fort_deps.py -o $1 --filelist=$2 --objdir=$(mk_BUILD_DIR)
 cmd_depends      += cmd_FC_depends
+
+# $(cmd_FC_depends,DEPS_FILE,SOURCE_LIST)
+define cmd_FC_depends
+	$(eval ___fc_src := $(call mk_file_list,filter,$(__fc_file_types),$2))
+	$(if $(___fc_src),\
+		$(call mk_file,$(mk_SOURCE_LIST_FILE).fc,$(___fc_src)) \
+		python $(__mk_root)fort_deps.py -a $1 --filelist=$(mk_SOURCE_LIST_FILE).fc --objdir=$(mk_BUILD_DIR))
+endef
 
 #-- user parameters --
 
@@ -185,6 +192,8 @@ __fl_arch_on_ifort     := -Wl,--whole-archive
 __fl_arch_off_ifort    := -Wl,--no-whole-archive
 
 #-- derive private flaglists --
+
+__fc_file_types     := f95 f90 for f
 
 __fc_pp_defines      = $(mk_FC_PP_DEFINES:%=$(fc_D)%)
 __fc_include_dirs    = $(patsubst %,$(fc_I)%,$(filter-out $(mk_FC_MOD_DIR),$(mk_BUILD_DIR) $(mk_FC_INCLUDE_DIRS)))

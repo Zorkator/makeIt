@@ -51,13 +51,14 @@ mk_unsigned       = $(patsubst -%,%,$1)#<                                       
 mk_disabled       = $(patsubst -%,%,$(filter -%,$1))#<                                         mk_disabled( -v1 v2 -v3 )          : v1 v3
 mk_enabled        = $(filter-out $(call mk_disabled,$1),$(call mk_unsigned,$1))#<              mk_enabled( -v1 v2 v3 )            : v2
 mk_selective      = $(call uniq,$(call mk_enabled,$1))#<                                       mk_selective( v1 v2 v3 -v1 )       : v2 v3
+mk_file_list      = $(call $1,$(foreach t,$2,%.$t),$3)#<                                       mk_file_list( func, extensions, filelist )
 
 mk_match          = ${shell case $1 in $2) echo '$(value 3)';; *) ;; esac}#<                   mk_match( text, pattern, res )     : res | ''
 mk_matchRE        = ${shell if expr $1 : $2 > /dev/null; then echo '$(value 3)'; fi}#<         mk_matchRE( text, re_pattern, res ): res | ''
 mk_pattern_opts   = $(foreach p,$($1),$(call mk_match,$2,$p,$($p)))#<                          mk_pattern_opts( PATTERN_list, text )
 mk_patternRE_opts = $(foreach p,$($1),$(call mk_matchRE,$2,$p,$($p)))#<                        mk_patternRE_opts( PATTERN_RE_list, text )
 
-# $(call mk_xargs,COMMAND,LIST,NUM)
+# $(call mk_xargs,COMMAND,LIST[,NUM])
 define mk_xargs
 	$(eval ___num  := $(or $3,$(__cmd_max_args)))
 	$(eval ___next := $(call plus,1,$(___num)))
