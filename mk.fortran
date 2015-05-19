@@ -220,10 +220,11 @@ define fc_cmd_link.exe
 endef
 
 define fc_cmd_link.shared
-	$(call mk_logged_cmd,$(fl) $(fc_o) $(mk_OUT_FILE_SO) $(__fc_lflags) $(call fl_archives,$(mk_OBJECT_ARCHIVE)) $(__fc_libraries) $(mk_FC_LINK_OTHER))
-	$(call mk_symlink_so,$(mk_OUT_FILE_SO))
-	$(call fc_copy_mods)
-	$(call mk_collect_so,$(mk_FC_LIBRARY_DIRS),$(mk_FC_LIBRARIES))
+	$(call mk_logged_cmd,$(fl) $(fc_o) $(mk_OUT_FILE) $(__fc_lflags) $(call fl_archives,$(mk_OBJECT_ARCHIVE)) $(__fc_libraries) $(mk_FC_LINK_OTHER))
+	$(if $(wildcard $(mk_OUT_FILE)),       \
+		$(call mk_symlink_so,$(mk_OUT_FILE)) \
+		$(call fc_copy_mods)                 \
+		$(call mk_collect_so,$(mk_FC_LIBRARY_DIRS),$(mk_FC_LIBRARIES)))
 endef
 
 define fc_cmd_link.static

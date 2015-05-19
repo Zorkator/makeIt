@@ -136,7 +136,6 @@ mk_OUT_NAME            = $(call mk_get,OUT_NAME)
 OUT_FILE_NAME_doc     ?= the file name of the final result
 OUT_FILE_NAME_default  = $(__out_file_name)
 mk_OUT_FILE_NAME       = $(call mk_get,OUT_FILE_NAME)
-mk_OUT_FILE_NAME_SO    = $(call mk_get,OUT_FILE_NAME)$(mk_MAYOR)$(mk_MINOR)
 __out_file_name        = $(call __out_file_name_of,$(mk_OUT_NAME).$(mk_TAG),$(mk_OUT_TYPE))
 __out_file_name_of     = $(call __out_file_name_$2,$1)
 __out_file_name_exe    = $1
@@ -145,8 +144,8 @@ __out_file_name_shared = lib$1.so
 
 OUT_FILE_doc          ?= path and file name of the final result
 OUT_FILE_default       = $(mk_OUT_DIR)/$(mk_OUT_FILE_NAME)
-mk_OUT_FILE            = $(call mk_get,OUT_FILE)
-mk_OUT_FILE_SO         = $(call mk_get,OUT_FILE)$(mk_MAYOR)$(mk_MINOR)
+mk_OUT_FILE            = $(call mk_get,OUT_FILE)$(__out_file_tag_$(mk_OUT_TYPE))
+__out_file_tag_shared  = $(mk_MAYOR)$(mk_MINOR)
 
 OUT_UMASK_doc         ?= the umask to set for the final output file
 mk_OUT_UMASK           = $(call mk_get,OUT_UMASK)
@@ -226,7 +225,7 @@ built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
 
 
 $(OUT_): $$(mk_OBJECTS)
-	@rm -f $@
+	@rm -f $@ $(mk_OBJECT_ARCHIVE)
 	@$(call mk_log,'$(call mk_frame,linking target)')
 	@$(call mk_archive_objects,$(mk_OBJECT_ARCHIVE))
 	@$(cmd_LINK)
