@@ -162,8 +162,8 @@ define cc_cmd_link.exe
 endef
 
 define cc_cmd_link.shared
-	$(call mk_logged_cmd,$(cc) $(cc_o) $(mk_OUT_FILE_SO) $(__cc_lflags) $(call cl_archives,$(mk_OBJECT_ARCHIVE)) $(__cc_libraries) $(mk_CC_LINK_OTHER))
-	$(call mk_symlink_so,$(mk_OUT_FILE_SO))
+	$(call mk_logged_cmd,$(cc) $(cc_o) $(mk_OUT_FILE) $(__cc_lflags) $(call cl_archives,$(mk_OBJECT_ARCHIVE)) $(__cc_libraries) $(mk_CC_LINK_OTHER))
+	$(call mk_symlink_so,$(mk_OUT_FILE))
 	$(call mk_collect_so,$(mk_CC_LIBRARY_DIRS),$(mk_CC_LIBRARIES))
 endef
 
