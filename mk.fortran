@@ -203,7 +203,7 @@ __fc_cflags          = $(__fc_include_dirs) $(__fc_pp_defines) $(call __fc_cflag
 __fc_cflags_of       = $(call __fc_cflags,$1) $(call mk_fileType_opts,$1)
 
 __fc_cmd_fpp         = $(fc) $(fc_E) $(call __fc_cflags_of,$(notdir $1)) $1
-__fc_cmd_compile     = $(strip $(fc) $(fc_c) $(call __fc_cflags_of,$(notdir $<)) $< $(fc_o) $@)
+__fc_cmd_compile     = $(fc) $(fc_c) $(call __fc_cflags_of,$(notdir $<)) $< $(fc_o) $@
 
 __fc_library_dirs    = $(call uniq,$(patsubst %,$(fc_L)%,$(mk_OUT_DIR) $(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS)))
 __fc_libraries       = $(patsubst %,$(fc_l)%,$(mk_FC_LIBRARIES))
@@ -221,10 +221,9 @@ endef
 
 define fc_cmd_link.shared
 	$(call mk_logged_cmd,$(fl) $(fc_o) $(mk_OUT_FILE) $(__fc_lflags) $(call fl_archives,$(mk_OBJECT_ARCHIVE)) $(__fc_libraries) $(mk_FC_LINK_OTHER))
-	$(if $(wildcard $(mk_OUT_FILE)),       \
-		$(call mk_symlink_so,$(mk_OUT_FILE)) \
-		$(call fc_copy_mods)                 \
-		$(call mk_collect_so,$(mk_FC_LIBRARY_DIRS),$(mk_FC_LIBRARIES)))
+	$(call mk_symlink_so,$(mk_OUT_FILE))
+	$(call fc_copy_mods)
+	$(call mk_collect_so,$(mk_FC_LIBRARY_DIRS),$(mk_FC_LIBRARIES))
 endef
 
 define fc_cmd_link.static
