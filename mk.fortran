@@ -51,7 +51,7 @@ mk_FC_FLAGS          = $(call mk_get,FC_FLAGS)
 
 FC_CFLAGS_doc       ?= fortran compile flags, applied to any file
 FC_CFLAGS.debug     ?= $(fc_g)
-FC_CFLAGS.release   ?= $(fc_O3)
+FC_CFLAGS.release   ?= $(fc_O2)
 mk_FC_CFLAGS         = $(call mk_get,FC_CFLAGS)
 
 FC_LFLAGS_doc       ?= fortran link flags
