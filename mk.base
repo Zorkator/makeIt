@@ -100,7 +100,7 @@ user:
 
 help-user_doc = print overview over parameters considering variable USER_SETTINGS
 help-user:
-	@$(MAKE) $(USER_SETTINGS) help
+	@$(MAKE) $(USER_SETTINGS) $(MAKEFLAGS) help
 
 
 help_doc = print overview over supported parameters and targets
