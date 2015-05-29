@@ -13,7 +13,7 @@ __cmd_max_args := 512
 
 mk_PARAMETERS  += 
 mk_CFG_list    +=
-mk_TARGET_list += help echo,* eval,* value,*
+mk_TARGET_list += user-* help-user help echo,* eval,* value,*
 
 mk_NULL       :=
 mk_SPACE      := $(mk_NULL) #
@@ -89,6 +89,19 @@ define mk_frame
 endef
 
 #-- targets --
+
+user-*_doc = meta target for starting make according to variable USER_SETTINGS: $(or $(USER_SETTINGS),NOT SET). use by e.g. make user-clean,built
+user-%:
+	$(if $(call seq,$*,.o),$(error missing target argument!))
+	$(call mk_submake,$(USER_SETTINGS) $(MAKEFLAGS),$(call mk_ssv,$*),1)
+
+user:
+	@$(mk_echo) 'meta target "user" needs a minus-separated target list: e.g. make user-clean  or  make user-clean,built'
+
+help-user_doc = print overview over parameters considering variable USER_SETTINGS
+help-user:
+	@$(MAKE) $(USER_SETTINGS) help
+
 
 help_doc = print overview over supported parameters and targets
 help:
