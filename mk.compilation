@@ -51,8 +51,12 @@ scan_source_dirs    = $(call mk_norm_dir,$(sort $(dir $(call scan_files_in,$1)))
 filter_source_in    = $(filter $1/%,$(mk_SOURCE_FILES))
 strip_source_in     = $(patsubst $1/%,%,$(call filter_source_in,$1))
 
-svn_revision       := $(shell svn info | sed -ne 's/^Revision: //p')
-svn_modified       := $(shell svn st | grep "^M " | awk '{print $$NF}')
+svn_repo_root       = $(shell svn info | sed -ne 's/^Repository Root: //p')
+svn_repo_url        = $(shell svn info | sed -ne 's/^URL: //p')
+svn_revision        = $(shell svn info | sed -ne 's/^Revision: //p')
+svn_project_id      = $(notdir $(svn_repo_root))
+svn_branch_id       = $(patsubst $(svn_repo_root)/%,%,$(svn_repo_url))
+svn_modified        = $(shell svn st | grep "^M " | awk '{print $$NF}')
 svn_modified_tab    = $(call mk_join,\\\n,$(svn_modified))
 
 # $(call mk_packages,BUILD_TARGET)
@@ -106,7 +110,7 @@ mk_CFG                 = $(call mk_get,CFG)
 
 TAG_doc               ?= string for tagging build directory.
 TAG_default            = $(subst $(mk_SPACE),.,$(foreach t,$(mk_OPT_list),$(mk_$t)))
-mk_TAG                 = $(call mk_get,TAG)
+mk_TAG                = $(call mk_get,TAG)
 
 mk_BUILT_TYPE_NAME     = $(__built_type_$(mk_OUT_TYPE))
 __built_type_exe       = APPLICATION
