@@ -62,8 +62,9 @@ svn_modified_tab    = $(call mk_join,\\\n,$(svn_modified))
 # $(call mk_packages,BUILD_TARGET)
 define mk_packages
 $(if $(mk_SUBPACKAGES),\
-	@$(mk_echo) ''$(call mk_frame,make $1 @ subpackages)                     \
-	$(call mk_submake,$1 MAKEFLAGS="$(mk_MAKEFLAGS)" -C,$(mk_SUBPACKAGES),1) \
+	@$(mk_echo) ''$(call mk_frame,make $1 @ subpackages) \
+	$(foreach pkg,$(mk_SUBPACKAGES),                     \
+		$(call mk_submake,$1 MAKEFLAGS="$(or $(MAKEFLAGS.$(pkg)),$(mk_MAKEFLAGS))" -C,$(pkg),1)) \
 	@$(mk_echo))
 endef
 

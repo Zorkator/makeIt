@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 """Usage: fort_deps [((-a|-o) <outfile>)] [--verbose] [--fpp=<cmd>] [--objdir=<dir>] [--filelist=<listfile>] [<file>...]
 
-Generate Fortran dependencies.
-The result is written to stdout or given output file.
+Generate Fortran module dependencies.
+All given files are scanned for definitions and uses of modules.
+For module definitions fort_deps detects any legal fortran module start line _and_ preprocessor includes, matching the form:
+#include "[<path>]<module_name>.fmod"
+The result is written in make syntax to stdout or any given output file.
 
 Options:
 	-a                      append to given output file
@@ -18,10 +21,12 @@ import docopt, re, sys, shlex
 from os.path    import splitext as _splitext, split as _splitpath, join as _joinpath
 from subprocess import Popen as _Popen, PIPE as _PIPE
 
+
 class DepsCrawler(object):
 
-	_scanMod = re.compile( r'^\s*module\s+(\w+)\s*(?:!.*|)$', re.IGNORECASE ).match
-	_scanUse = re.compile( r'^\s*use\s+(\w+)',                re.IGNORECASE ).match
+	_scanMod = re.compile( r'^\s*module\s+(\w+)\s*(?:!.*|)$',          re.IGNORECASE ).match
+	_scanInc = re.compile( r'^#\s*include\s*["\'].*?(\w+)\.fmod["\']', re.IGNORECASE ).match
+	_scanUse = re.compile( r'^\s*use\s+(\w+)',                         re.IGNORECASE ).match
 
 	@staticmethod
 	def _getStream( fileName, fpp ):
@@ -49,6 +54,7 @@ class DepsCrawler(object):
 			try  : self.scanFile( fileName, kwArgs['--fpp'] )
 			except IOError as e:
 				self._out( 2, "WARNING: %s skipped: %s" % (fileName, e) )
+		self._log( "\n", "module definitions:", *map( ': '.join, self._modTab.items() ) )
 
 
 	def scanFile( self, fileName, fpp ):
@@ -59,7 +65,7 @@ class DepsCrawler(object):
 				if use:
 					uses.add( use.groups()[0].lower() )
 				else:
-					mod = self._scanMod( line )
+					mod = self._scanMod( line ) or self._scanInc( line )
 					if mod:
 						self._modTab[ mod.groups()[0].lower() ] = fileName
 
