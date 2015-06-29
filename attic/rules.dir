@@ -1,8 +1,0 @@
-
-#--
-# Directory Target
-# - allows to generate directories via dependency list
-#
-"%/":
-	@mkdir -p $*
-
