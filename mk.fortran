@@ -12,7 +12,7 @@ mk_OPT_CLASSES   += FC
 mk_TARGET_list   += fpp,*
 mk_FILE_TYPES    += $(__fc_file_types)
 mk_OUTPUT_DIRS   += $(FC_MOD_DIR)
-mk_CLEARED_FILES += $(mk_BUILD_DIR)/*.o $(mk_BUILD_DIR)/*.mod
+mk_CLEARED_FILES += $(mk_BUILD_DIR)/*.o $(mk_BUILD_DIR)/*.mod $(mk_BUILD_DIR)/lib*
 
 mk_FC_list       += gfortran ifort
 mk_ARCH_list     += 64 32
@@ -23,9 +23,11 @@ cmd_depends      += cmd_FC_depends
 # $(cmd_FC_depends,DEPS_FILE,SOURCE_LIST)
 define cmd_FC_depends
 	$(eval ___fc_src := $(call mk_file_list,filter,$(__fc_file_types),$2))
+	$(eval ___tmp    := $(mk_BUILD_DIR)/.mk.FC_depends)
 	$(if $(___fc_src),\
-		$(call mk_file,$(mk_SOURCE_LIST_FILE).fc,$(___fc_src)) \
-		python $(__mk_root)fort_deps.py -a $1 --filelist=$(mk_SOURCE_LIST_FILE).fc --objdir=$(mk_BUILD_DIR))
+		$(call mk_write_file,$(___tmp),$(___fc_src)) \
+		python $(__mk_root)fort_deps.py -a $1 --filelist=$(___tmp) --objdir=$(mk_BUILD_DIR) ;\
+		rm -f $(___tmp))
 endef
 
 #-- user parameters --
@@ -114,7 +116,7 @@ fl_archives  = $(fl_arch_on) $1 $(fl_arch_off)#   < option frame for linking who
 
 fpp,*_doc = preprocess file to stdout. Directories have to be separated by \\\\, e.g. make fpp,src\\\\main.f90
 fpp,%:
-	$(MAKE) --quiet $(subst \,/,$*)
+	$(mk_MAKE) --quiet $(subst \,/,$*)
 	$(call __fc_cmd_fpp,$(subst \,/,$*))
 
 
@@ -209,7 +211,7 @@ fc_cflags_of         = $(or $(call mk_get,$(basename $1)),$(__fc_cflags) $(call 
 __fc_cmd_fpp         = $(fc) $(fc_E) $(call fc_cflags_of,$(notdir $1)) $1
 __fc_cmd_compile     = $(fc) $(fc_c) $(call fc_cflags_of,$(notdir $<)) $< $(fc_o) $@
 
-__fc_library_dirs    = $(call uniq,$(patsubst %,$(fc_L)%,$(mk_OUT_DIR) $(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS)))
+__fc_library_dirs    = $(call uniq,$(patsubst %,$(fc_L)%,$(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS)))
 __fc_libraries       = $(patsubst %,$(fc_l)%,$(mk_FC_LIBRARIES))
 __fc_lflags          = $(mk_FC_LFLAGS) $(mk_FC_FLAGS) $(__fc_library_dirs)
 

@@ -13,13 +13,14 @@ __cmd_max_args := 512
 
 mk_PARAMETERS  += 
 mk_CFG_list    +=
-mk_TARGET_list += user-* help-user help echo,* eval,* value,*
+mk_TARGET_list += std-* help-std dist-* help echo,* eval,* value,*
 
 mk_NULL       :=
 mk_SPACE      := $(mk_NULL) #
 mk_COMMA      := ,
 mk_DOLLAR     := $$
 mk_ANY        := %
+mk_MAKE        = $(MAKE) -f $(firstword $(MAKEFILE_LIST))
 
 mk_ignoreErrors  := 2> /dev/null || :
 mk_echo          := /bin/echo -e
@@ -34,29 +35,36 @@ mk_warning        = $1\n$(warning $1)
 mk_count          = $(words $(filter $1,$2))
 mk_substring      = $(if $(findstring $1,$2),$2,)
 mk_grep           = $(strip $(foreach x,$2,$(call mk_substring,$1,$x)))
-mk_lower          = $(shell echo $(1) | tr A-Z a-z)#<                                          mk_lower( sTriNg )                 : string
-mk_upper          = $(shell echo $(1) | tr a-z A-Z)#<                                          mk_upper( sTriNg )                 : STRING
-mk_csv            = $(subst $(mk_SPACE),$(mk_COMMA),$(strip $1))#<                             mk_csv( v1 v2 ... )                : v1,v2,...
-mk_lsv            = $(subst $(mk_SPACE),\\n,$(strip $1))#<                                     mk_lsv( v1 v2 ... )                : 'v1\nv2\n...'
-mk_join           = $(subst $(mk_SPACE),$1,$(strip $2))#<                                      mk_join( S, v1 v2 ... )            : 'v1Sv2S...'
-mk_ssv            = $(subst $(mk_COMMA),$(mk_SPACE),$(strip $1))#<                             mk_ssv( 'v1,v2,...' )              : 'v1 v2 ...'
-mk_reverse        = $(if $1,$(call mk_reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))#< mk_reverse( v1 v2 ... )            : ... v2 v1
-mk_defined        = $(patsubst undefined,,$(origin $1))#<                                      mk_defined( varId )                : origin(varId) | ''
-mk_var            = $(if $(call mk_defined,$1),\\$($1),)#<                                     mk_var( varId )                    : \\$(varId) | ''
-mk_val            = $(or $($1),$($1_default))#<                                                mk_val( varId )                    : val | default | ''
-mk_map            = $(foreach i,$2,$(call $1,$i))#<                                            mk_map( func, v1 v2 ... )          : res1 res2 ...
-mk_lines          = $(shell $(mk_echo) "$1" | wc -l)#<                                         mk_lines( string )                 : num of lines
-mk_opt_set        = {$(call mk_csv,$(call uniq,$(mk_$1_list)))}#<                              mk_opt_set( optID )                : base name of option list
-mk_unsigned       = $(patsubst -%,%,$1)#<                                                      mk_unsigned( -v1 v2 -v3 )          : v1 v2 v3
-mk_disabled       = $(patsubst -%,%,$(filter -%,$1))#<                                         mk_disabled( -v1 v2 -v3 )          : v1 v3
-mk_enabled        = $(filter-out $(call mk_disabled,$1),$(call mk_unsigned,$1))#<              mk_enabled( -v1 v2 v3 )            : v2
-mk_selective      = $(call uniq,$(call mk_enabled,$1))#<                                       mk_selective( v1 v2 v3 -v1 )       : v2 v3
-mk_file_list      = $(call $1,$(foreach t,$2,%.$t),$3)#<                                       mk_file_list( func, extensions, filelist )
+mk_lower          = $(shell echo $(1) | tr A-Z a-z)#<                                              mk_lower( sTriNg )                 : string
+mk_upper          = $(shell echo $(1) | tr a-z A-Z)#<                                              mk_upper( sTriNg )                 : STRING
+mk_csv            = $(subst $(mk_SPACE),$(mk_COMMA),$(strip $1))#<                                 mk_csv( v1 v2 ... )                : v1,v2,...
+mk_lsv            = $(subst $(mk_SPACE),\\n,$(strip $1))#<                                         mk_lsv( v1 v2 ... )                : 'v1\nv2\n...'
+mk_join           = $(subst $(mk_SPACE),$1,$(strip $2))#<                                          mk_join( S, v1 v2 ... )            : 'v1Sv2S...'
+mk_ssv            = $(subst $(mk_COMMA),$(mk_SPACE),$(strip $1))#<                                 mk_ssv( 'v1,v2,...' )              : 'v1 v2 ...'
+mk_reverse        = $(if $1,$(call mk_reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))#<     mk_reverse( v1 v2 ... )            : ... v2 v1
+mk_defined        = $(patsubst undefined,,$(origin $1))#<                                          mk_defined( varId )                : origin(varId) | ''
+mk_var            = $(if $(call mk_defined,$1),\\$($1),)#<                                         mk_var( varId )                    : \\$(varId) | ''
+mk_val            = $(or $($1),$($1_default))#<                                                    mk_val( varId )                    : val | default | ''
+mk_map            = $(foreach i,$2,$(call $1,$i))#<                                                mk_map( func, v1 v2 ... )          : res1 res2 ...
+mk_cartesian      = $(shell $(mk_echo) {$(call mk_csv,$(patsubst %,%$3,$1))}{$(call mk_csv,$2)})#< mk_cartesian( a b, 1 2,-)          : a-1 a-2 b-1 b-2
+mk_lines          = $(shell $(mk_echo) "$1" | wc -l)#<                                             mk_lines( string )                 : num of lines
+mk_opt_set        = {$(call mk_csv,$(call uniq,$(mk_$1_list)))}#<                                  mk_opt_set( optID )                : base name of option list
+mk_unsigned       = $(patsubst -%,%,$1)#<                                                          mk_unsigned( -v1 v2 -v3 )          : v1 v2 v3
+mk_disabled       = $(patsubst -%,%,$(filter -%,$1))#<                                             mk_disabled( -v1 v2 -v3 )          : v1 v3
+mk_enabled        = $(filter-out $(call mk_disabled,$1),$(call mk_unsigned,$1))#<                  mk_enabled( -v1 v2 v3 )            : v2
+mk_selective      = $(call uniq,$(call mk_enabled,$1))#<                                           mk_selective( v1 v2 v3 -v1 )       : v2 v3
+mk_file_list      = $(call $1,$(foreach t,$2,%.$t),$3)#<                                           mk_file_list( func, extensions, filelist )
 
-mk_match          = ${shell case $1 in $2) echo '$(value 3)';; *) ;; esac}#<                   mk_match( text, pattern, res )     : res | ''
-mk_matchRE        = ${shell if expr $1 : $2 > /dev/null; then echo '$(value 3)'; fi}#<         mk_matchRE( text, re_pattern, res ): res | ''
-mk_pattern_opts   = $(foreach p,$($1),$(call mk_match,$2,$p,$($p)))#<                          mk_pattern_opts( PATTERN_list, text )
-mk_patternRE_opts = $(foreach p,$($1),$(call mk_matchRE,$2,$p,$($p)))#<                        mk_patternRE_opts( PATTERN_RE_list, text )
+___split_kv       = $(subst =, =,$1)
+mk_keys           = $(filter-out =%,$(call ___split_kv,$1))#<                                      mk_keys( A=0 B=3 C=X )  : A B C
+mk_values         = $(patsubst =%,%,$(filter =%,$(call ___split_kv,$1)))#<                         mk_values( A=0 B=3 C=X ): 0 3 X
+mk_flag_filter    = $(call filter$1,$(patsubst %,%=%,$2),$3)#<                                     mk_flag_filter( [-out], X Z, X=5 Y=3 Z=0 ): Y=3
+mk_flag_replace   = $(call mk_flag_filter,-out,$(call mk_keys,$2),$1) $2#<                         mk_flag_replace( A=0 B=3 C=X, B=5 Y=8 )   : A=0 C=X B=5 Y=8
+
+mk_match          = ${shell case $1 in $2) echo '$(value 3)';; *) ;; esac}#<                       mk_match( text, pattern, res )     : res | ''
+mk_matchRE        = ${shell if expr $1 : $2 > /dev/null; then echo '$(value 3)'; fi}#<             mk_matchRE( text, re_pattern, res ): res | ''
+mk_pattern_opts   = $(foreach p,$($1),$(call mk_match,$2,$p,$($p)))#<                              mk_pattern_opts( PATTERN_list, text )
+mk_patternRE_opts = $(foreach p,$($1),$(call mk_matchRE,$2,$p,$($p)))#<                            mk_patternRE_opts( PATTERN_RE_list, text )
 
 # $(call mk_xargs,COMMAND,LIST[,NUM])
 define mk_xargs
@@ -66,15 +74,24 @@ define mk_xargs
 	$(if $(word $(___next),$2),$(call mk_xargs,$1,$(wordlist $(___next),$(words $2),$2),$(___num)))
 endef
 
-# $(call mk_file,FILENAME,LIST,[append])
-define mk_file
+# $(call mk_read_file,FILENAME)
+define mk_read_file
+	$(shell cat $1 2>&1)
+endef
+
+# $(call mk_write_file,FILENAME,LIST,[append])
+define mk_write_file
 	: $(if $(and $2,$3),,>$1)
 	$(call mk_xargs,printf "%s\n" >>$1,$2,$(__cmd_max_args))
 endef
 
-# $(call mk_submake,ARGS,TARGETLIST,[NUM])
+# $(call mk_submake,ARGS,TARGETLIST,[NUM],[MAKE_VAR],[MESSAGE])
+# NOTE: by default, we call make via $(mk_MAKE) to ensure reading the same makefile again!
 define mk_submake
-	$(if $2,$(call mk_xargs,$(MAKE) $1,$2,$(or $3,$(__cmd_max_args))))
+	$(eval ___num  := $(or $3,$(__cmd_max_args)))
+	$(eval ___make := $($(or $4,mk_MAKE)))
+	@$(if $5,$(mk_echo) $5 $(___make) $1 $2)
+	$(if $2,$(call mk_xargs,$(___make) $1,$2,$(___num)))
 endef
 
 # $(call mk_link,TGT_NAME_PAIRS)
@@ -90,17 +107,24 @@ endef
 
 #-- targets --
 
-user-*_doc = meta target for starting make according to variable USER_SETTINGS: $(or $(USER_SETTINGS),NOT SET). use by e.g. make user-clean,built
-user-%:
+std-*_doc = meta target for starting make according to variable STD_SETTINGS: $(or $(STD_SETTINGS),NOT SET). use by e.g. make std-clean,built
+std-%:
 	$(if $(call seq,$*,.o),$(error missing target argument!))
-	$(call mk_submake,$(USER_SETTINGS) $(MAKEFLAGS),$(call mk_ssv,$*),1)
+	$(call mk_submake,$(STD_SETTINGS) $(MAKEFLAGS),$(call mk_ssv,$*),1,,'>> STD-CONFIGURATION:')
 
-user:
-	@$(mk_echo) 'meta target "user" needs a minus-separated target list: e.g. make user-clean  or  make user-clean,built'
+std:
+	@$(mk_echo) 'meta target "std" needs a minus-separated target list: e.g. make std-clean  or  make std-clean,built'
 
-help-user_doc = print overview over parameters considering variable USER_SETTINGS
-help-user:
-	@$(MAKE) $(USER_SETTINGS) $(MAKEFLAGS) help
+help-std_doc = print overview over parameters considering variable STD_SETTINGS
+help-std:
+	@$(mk_MAKE) $(STD_SETTINGS) $(MAKEFLAGS) help
+
+
+dist-*_doc = meta target for starting make on distribution configurations: $(call mk_cartesian,$(DIST_CFG_list),$(DIST_OUT_TYPE_list),-)
+dist-%:
+	$(foreach cfg,$(DIST_CFG_list),\
+		$(foreach type,$(DIST_OUT_TYPE_list),\
+			$(call mk_submake,CFG=$(cfg) OUT_TYPE=$(type),$*,1,,'\n>> DIST-CONFIGURATION:')))
 
 
 help_doc = print overview over supported parameters and targets
@@ -150,7 +174,7 @@ __var_chk  = $(if $(mk_$1_list),$(filter $(mk_$1),$(mk_$1_list)),ok)
 __var_doc  = $(if $(call __var_chk,$1),$(call __var_line,$1),$(error option variable $1 is set to unknown value "$($1)"))
 __var_tab  = $(call mk_map,__var_doc,$(sort $(mk_PARAMETERS)))
 
-__tgt_doc = $(shell printf '%-10s %s\\n' '$1' '$($(1)_doc)')
+__tgt_doc = $(shell printf '%-10s %s\\n' '$1' '$(or $($1_doc),no description)')
 __tgt_tab = $(call mk_map,__tgt_doc,$(sort $(mk_TARGET_list)))
 __cfg_tab = $(call mk_map,__tgt_doc,$(sort $(mk_CFG_list)))
 

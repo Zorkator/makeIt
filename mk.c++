@@ -100,7 +100,7 @@ cl_archives = $(cl_arch_on) $1 $(cl_arch_off)#   < option frame for linking whol
 
 cpp,*_doc = preprocess file to stdout. Directories have to be separated by \\\\, e.g. make cpp,src\\\\main.cpp
 cpp,%:
-	$(MAKE) --quiet $(subst \,/,$*)
+	$(mk_MAKE) --quiet $(subst \,/,$*)
 	$(call __cc_cmd_cpp,$(subst \,/,$*))
 
 
@@ -151,7 +151,7 @@ __cc_cflags_of       = $(call __cc_cflags,$1) $(call mk_fileType_opts,$1)
 __cc_cmd_cpp         = $(cc) $(cc_E) $(call __cc_cflags_of,$(notdir $1)) $1
 __cc_cmd_compile     = $(cc) $(cc_c) $(call __cc_cflags_of,$(notdir $<)) $< $(cc_o) $@
 
-__cc_library_dirs    = $(call uniq,$(patsubst %,$(cc_L)%,$(mk_OUT_DIR) $(mk_BUILD_DIR) $(mk_CC_LIBRARY_DIRS)))
+__cc_library_dirs    = $(call uniq,$(patsubst %,$(cc_L)%,$(mk_BUILD_DIR) $(mk_CC_LIBRARY_DIRS)))
 __cc_libraries       = $(patsubst %,$(cc_l)%,$(mk_CC_LIBRARIES))
 __cc_lflags          = $(mk_CC_LFLAGS) $(mk_CC_FLAGS) $(__cc_library_dirs)
 

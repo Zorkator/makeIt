@@ -13,10 +13,11 @@ mk_TARGET_list  += built clean grep,* $(TARGETS)
 mk_FILE_TYPES   += 
 mk_OUTPUT_DIRS  += $(mk_BUILD_DIR) $(mk_OUT_DIR)
 
-DEPS_              ?= .mk.deps
-mk_DEPS             = $(mk_BUILD_DIR)/$(notdir $(DEPS_))
+DEPS_               = # empty by default
+SRC_CACHE_          = # empty by default
+mk_DEPS             = $(mk_BUILD_DIR)/.mk.deps
 mk_DEPS_info        = $(notdir $(mk_pwd))  [$1] @ $(mk_now)
-mk_SOURCE_LIST_FILE = $(mk_BUILD_DIR)/.mk.sourcelist
+mk_SRC_CACHE        = $(mk_BUILD_DIR)/.mk.sourcelist
 
 mk_OUT_TYPE_list   += static shared exe
 mk_BUILD_MODE_list += $(mk_OUT_TYPE_list)
@@ -30,15 +31,8 @@ mk_OPT_CLASS_list   = $(sort $(mk_OPT_CLASSES) mk_ANY)
 mk_tags             = $(foreach c,$(filter-out $1,$(mk_OPT_CLASS_list)),$($1.$(call mk_val,$c)))
 mk_get              = $(or $($1),$(strip $(call mk_tags,$(notdir $1))),$($1_default))
 mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patternRE_opts,mk_FILE_PATTERNS_RE,$1)
-mk_object_of        = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(1))))
 mk_variant_of       = $(dir $1).variant.$(notdir $1)# < build rules urge us to link in source directory :-(
 mk_chain_args       = $(subst ' -,' -$1 -,$2)
-mk_list_multisource = $(call ___object_source_of,$(notdir $(mk_OBJECTS)),$(call mk_path,$(mk_SOURCE_FILES)),$2,$(or $1,multiple source files for))
-___source_files_of  = $(call mk_grep,/$(basename $1).,$2)
-___object_source_of = $(strip \
-                        $(foreach o,$(sort $1),  \
-                          $(if $(filter-out 1,$(call mk_count,$o,$1)), \
-                            $(call $(or $3,mk_args),$4 $o: [$(call ___source_files_of,$o,$2)]))))
 
 any_source          = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
 any_source_in       = $(foreach t,$(mk_FILE_TYPES),$(wildcard $(call mk_norm_dir,$1)/*.$(t)))
@@ -46,7 +40,7 @@ scan_source         = $(foreach d,$(mk_SOURCE_DIRS),$(call any_source_in,$d))
 
 scan_file_pattern   = $(call mk_chain_args,or,$(foreach x,$(mk_FILE_TYPES),-name '*.$x'))
 ignore_dir_pattern  = $(call mk_chain_args,or,$(foreach x,$(mk_IGNORE_DIRS),-path '*/$x/*') -path '*/.*')
-scan_files_in       = $(shell find -L $1 \( $(scan_file_pattern) \) -and -not \( $(ignore_dir_pattern) \))
+scan_files_in       = $(info scanning files in $(abspath $1) ...)$(shell find -L $1 \( $(scan_file_pattern) \) -and -not \( $(ignore_dir_pattern) \))
 scan_source_dirs    = $(call mk_norm_dir,$(sort $(dir $(call scan_files_in,$1))))
 filter_source_in    = $(filter $1/%,$(mk_SOURCE_FILES))
 strip_source_in     = $(patsubst $1/%,%,$(call filter_source_in,$1))
@@ -59,12 +53,33 @@ svn_branch_id       = $(patsubst $(svn_repo_root)/%,%,$(svn_repo_url))
 svn_modified        = $(shell svn st | grep "^M " | awk '{print $$NF}')
 svn_modified_tab    = $(call mk_join,\\\n,$(svn_modified))
 
+# $(call mk_list_multisource,SOURCE_FILES,[ITEM_INDENT],[FUNC=mk_args])
+mk_list_multisource = $(strip $(call ___object_source_of,$(or $1,$(mk_SOURCE_FILES)),$2,$3))
+
+# $(call ___object_source_of,SOURCE_FILES,[ITEM_INDENT],[FUNC=mk_args])
+define ___object_source_of
+	$(eval ___src_files := $(call mk_path,$1))
+	$(eval ___objects   := $(addsuffix .o,$(notdir $(basename $1))))
+	$(eval ___indent    := $(or $2,multiple source file for))
+	$(eval ___func      := $(or $3,mk_args))
+	$(strip \
+    $(foreach o,$(sort $(___objects)),  \
+      $(if $(filter-out 1,$(call mk_count,$o,$(___objects))), \
+        $(call $(___func),$(___indent) $o: [$(strip $(call ___source_files_of,$o,$(___src_files)))]))))
+endef
+
+#	$(call ___source_files_of,OBJECT,SOURCE_FILES)
+define ___source_files_of
+	$(call mk_grep,/$(basename $1).,$2)
+endef
+
 # $(call mk_packages,BUILD_TARGET)
+# NOTE: mk_submake uses calls MAKE (instead of mk_MAKE), since we can NOT force the same makefile for subpackages.
 define mk_packages
 $(if $(mk_SUBPACKAGES),\
 	@$(mk_echo) ''$(call mk_frame,make $1 @ subpackages) \
 	$(foreach pkg,$(mk_SUBPACKAGES),                     \
-		$(call mk_submake,$1 MAKEFLAGS="$(or $(MAKEFLAGS.$(pkg)),$(mk_MAKEFLAGS))" -C,$(pkg),1)) \
+		$(call mk_submake,$1 MAKEFLAGS="$(or $(MAKEFLAGS.$(pkg)),$(mk_PKG_MAKEFLAGS))" -C,$(pkg),1,MAKE,'\n>> SUBPACKAGE:')) \
 	@$(mk_echo))
 endef
 
@@ -75,9 +90,11 @@ endef
 
 # $(call mk_collect_so,LIB_DIRS,SO_NAMES[,TARGET_DIR])
 define mk_collect_so
+	$(eval ___lib_dirs     := $(mk_BUILD_DIR) $1)
+	$(eval ___target_dir   := $(or $3,$(mk_OUT_DIR)))
 	$(eval ___find_pattern := $(subst ' -,' -or -,$(foreach l,$2,-wholename '*$l*.so*')))
-	$(if $(and $1,$2),\
-    find $1 \( $(___find_pattern) \) -and -not -path '*/.*' -exec cp -a {} $(or $3,$(mk_OUT_DIR)) \; $(mk_ignoreErrors))
+	$(if $2,\
+    find $(___lib_dirs) \( $(___find_pattern) \) -and -not -path '*/.*' -printf '\ngrabbing dependency %f from %h' -exec cp -a {} $(___target_dir) \; $(mk_ignoreErrors))
 endef
 
 # $(call mk_archive_objects,ARCHIVE)
@@ -87,11 +104,11 @@ define mk_archive_objects
 	cd -
 endef
 
-# $(call mk_depends,FILELIST
+# $(call mk_depends,DEPS_FILE,FILELIST
 define mk_depends
 	@$(call mk_log,'$(call mk_frame,building deps $(call mk_DEPS_info,$@))',,renew)
-	: >$(mk_DEPS)
-	$(foreach cmd,$(cmd_depends),$(call $(cmd),$(mk_DEPS),$1))
+	: >$1
+	$(foreach cmd,$(cmd_depends),$(call $(cmd),$1,$2))
 endef
 
 #-- user parameters --
@@ -163,7 +180,7 @@ MINOR_doc             ?= minor version number, e.g. svn revision
 MINOR_default          = $(svn_revision)
 mk_MINOR               = .$(call mk_val,MINOR)
 
-SOURCE_DIRS           ?= $(call scan_source_dirs,.)
+SOURCE_DIRS_default    = $(call scan_source_dirs,.)
 mk_SOURCE_DIRS         = $(call mk_get,SOURCE_DIRS)
 mk_IGNORE_DIRS         = $(call mk_get,IGNORE_DIRS)
 
@@ -174,7 +191,7 @@ mk_VARIANT_FILES       = $(call mk_get,VARIANT_FILES)
 mk_VARIANT_SOURCE      = $(call map,mk_variant_of,$(mk_VARIANT_FILES))
 mk_VARIANT_PAIRS       = $(foreach f,$(mk_VARIANT_FILES),$(abspath  $f) $(call mk_variant_of,$f))
 
-mk_OBJECTS             = $(call mk_object_of,$(mk_SOURCE_FILES))
+mk_OBJECTS             = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(mk_SOURCE_FILES))))
 
 OBJECT_ARCHIVE        ?= $(mk_BUILD_DIR)/.mk.objects.a
 OBJECT_ARCHIVE.static  = $(mk_OUT_FILE)
@@ -185,8 +202,10 @@ mk_CLEARED_FILES      += $(CLEARED_FILES) $(mk_VARIANT_SOURCE)
 SUBPACKAGES_doc       ?= directory list of project prerequisites
 mk_SUBPACKAGES         = $(call mk_get,SUBPACKAGES)
 
-mk_sub_makeflag        = $(if $(call seq,$1,BUILD_MODE),$(subst exe,static,$(mk_$1)),$(mk_$1))
-mk_MAKEFLAGS           = $(patsubst OUT_NAME=%,,$(sort $(MAKEFLAGS) $(foreach t,$(mk_OPT_CLASSES),$t=$(call mk_sub_makeflag,$t)) OUT_DIR=$(abspath $(mk_BUILD_DIR)) OUT_TYPE=static))
+mk_MAKEFLAGS           = $(call uniq,$(foreach o,$(mk_OPT_CLASSES),$o=$(mk_$o)) $(MAKEFLAGS))
+mk_PKG_MAKEFLAGS       = $(call mk_flag_filter,-out,BUILD_MODE OUT_TYPE OUT_NAME OUT_DIR,$(mk_MAKEFLAGS)) OUT_TYPE=shared OUT_DIR=$(abspath $(mk_BUILD_DIR))
+mk_pkg_reflag          = $(call mk_flag_replace,$(mk_PKG_MAKEFLAGS),$1 $(___pkg_compat.$(mk_BUILD_MODE)))
+___pkg_compat.shared  := BUILD_MODE=shared
 
 mk_BINARY_TAG          = $(call mk_get,BINARY_TAG)
 mk_BINARY_TAG_len      = $(call mk_lines,$(mk_BINARY_TAG))
@@ -202,31 +221,34 @@ mk_BINARY_TAG_frame    = $(if $(mk_BINARY_TAG),\
 .DELETE_ON_ERROR:
 .PHONY: $(mk_TARGET_list) $(mk_CFG_list) built
 
-$(DEPS_): $(MAKEFILE_LIST)
+
+$(SRC_CACHE_): $(MAKEFILE_LIST)
+	@$(mk_echo) ''$(call mk_frame,recaching source files ...)
 	@mkdir -p $(mk_BUILD_DIR) #<  ensure build dir explicitly - can't do this by prerequisite, as its time stamp changes!
-	@touch $@                 #<  just touch empty deps file to prevent endless make in project root
-	$(eval ___at_work := $(call seq,$(call mk_norm_dir,$(dir $@)),$(mk_BUILD_DIR)))
-	@# create links to variant files ...
-	$(if $(___at_work),$(call mk_link,$(mk_VARIANT_PAIRS)))
-	@# write source file list to temporary file
-	@#   and make sure all source files exist BEFORE running dependency analysis ...
-	$(eval ___src := $(mk_SOURCE_FILES))
-	@$(if $(and $(___at_work),$(___src)),  \
-		$(call mk_submake,--quiet,$(___src)) \
-		$(call mk_depends,$(___src)))
-	@# check and warn if multiple source files map to a single object file ...
-	$(eval ___multi_src_objects := $(call mk_list_multisource,. . . . >>))
-	@if [ -n "$(and $(___at_work),$(___multi_src_objects))" ]; then  \
-  	$(call mk_log,\nWARNING: Your makefile effectively specifies multiple source files yielding the same object!                              \
-	  	            \n         For compiling the following objects make will consider only the first source file:\n\n $(___multi_src_objects)) ;\
+	@$(call mk_write_file,$@,$(mk_SOURCE_FILES)) #< write list of source files to cache file
+
+
+$(DEPS_): $(SRC_CACHE_)
+	@$(eval __src_files := $(mk_SOURCE_FILES))
+	@touch $@                                  #< need to touch DEPS_-file BEFORE mk_submake to prevent endless recursion!!!
+	@$(call mk_submake,--quiet,$(__src_files)) #< BUT call submake on source files to ensure they're up-to-date BEFORE updating DEPS_-file!
+	@$(call mk_depends,$@,$(__src_files))      #< update DEPS_-file
+	@$(eval ___multi_src_objects := $(call mk_list_multisource,$(__src_files),. . . . >>))
+	@if [ -n "$(___multi_src_objects)" ]; then  \
+		$(call mk_log,\nWARNING: Your makefile effectively specifies multiple source files yielding the same object!                              \
+		              \n         For compiling the following objects make will consider only the first source file:\n\n $(___multi_src_objects)) ;\
 		read -p "press ENTER to continue"                                                                                                        ;\
 	fi
 
 
 built_doc = target for starting build process
 built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
-	$(call mk_packages,built)
-	@$(MAKE) DEPS_=$(mk_DEPS) OUT_='$(mk_OUT_FILE)' $(mk_OUT_FILE)
+	@$(call mk_packages,built)
+	@$(eval __src_list := $(call mk_read_file,$(mk_SRC_CACHE)))
+	@if [ -z "$(call seq,$(__src_list),$(mk_SOURCE_FILES))" ]; then \
+		rm -f $(mk_SRC_CACHE)                                       ;\
+	fi
+	@$(mk_MAKE) DEPS_=$(mk_DEPS) SRC_CACHE_=$(mk_SRC_CACHE) OUT_='$(mk_OUT_FILE)' $(mk_OUT_FILE)
 
 
 $(OUT_): $$(mk_OBJECTS)
@@ -249,7 +271,7 @@ $(OUT_): $$(mk_OBJECTS)
 	
 
 $(mk_CFG_list):
-	@$(MAKE) CFG=$@ built
+	@$(mk_MAKE) CFG=$@ built
 
 
 clean_doc = clear build directory [$(mk_BUILD_DIR)] by removing object files
