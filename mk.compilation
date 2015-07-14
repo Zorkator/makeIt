@@ -19,10 +19,11 @@ mk_DEPS             = $(mk_BUILD_DIR)/.mk.deps
 mk_DEPS_info        = $(notdir $(mk_pwd))  [$1] @ $(mk_now)
 mk_SRC_CACHE        = $(mk_BUILD_DIR)/.mk.sourcelist
 
-mk_OUT_TYPE_list   += static shared exe
-mk_BUILD_MODE_list += $(mk_OUT_TYPE_list)
+__builtin_OUT_TYPEs = exe shared static
+mk_OUT_TYPE_list    = $(call mk_selective,$(OUT_TYPE_list) $(__builtin_OUT_TYPEs))
+mk_BUILD_MODE_list  = $(mk_OUT_TYPE_list)
 mk_ARCH_list       +=
-mk_CFG_list         = $(call mk_selective,$(__builtin_CFGs) $(CONFIGURATIONS))
+mk_CFG_list         = $(call mk_selective,$(CFG_list) $(__builtin_CFGs))
 mk_FILE_PATTERNS    = $(sort $(FILE_PATTERNS) $(mk_FILE_TYPES:%=*.%))
 mk_FILE_PATTERNS_RE = $(sort $(FILE_PATTERNS_RE))
 mk_OPT_list         = $(filter-out BUILD_MODE,$(mk_OPT_CLASSES))
@@ -76,11 +77,11 @@ endef
 # $(call mk_packages,BUILD_TARGET)
 # NOTE: mk_submake uses calls MAKE (instead of mk_MAKE), since we can NOT force the same makefile for subpackages.
 define mk_packages
-$(if $(mk_SUBPACKAGES),\
-	@$(mk_echo) ''$(call mk_frame,make $1 @ subpackages) \
-	$(foreach pkg,$(mk_SUBPACKAGES),                     \
-		$(call mk_submake,$1 MAKEFLAGS="$(or $(MAKEFLAGS.$(pkg)),$(mk_PKG_MAKEFLAGS))" -C,$(pkg),1,MAKE,'\n>> SUBPACKAGE:')) \
-	@$(mk_echo))
+	+$(if $(mk_SUBPACKAGES),\
+		@$(mk_echo) ''$(call mk_frame,make $1 @ subpackages) \
+		$(foreach pkg,$(mk_SUBPACKAGES),                     \
+			$(call mk_submake,$1 MAKEFLAGS="$(or $(MAKEFLAGS.$(pkg)),$(mk_PKG_MAKEFLAGS))" -C,$(pkg),1,MAKE,'\n>> SUBPACKAGE:')) \
+		@$(mk_echo))
 endef
 
 # $(call mk_symlink_so,SO_FILENAME)
@@ -130,7 +131,7 @@ TAG_doc               ?= string for tagging build directory.
 TAG_default            = $(subst $(mk_SPACE),.,$(foreach t,$(mk_OPT_list),$(mk_$t)))
 mk_TAG                = $(call mk_get,TAG)
 
-mk_BUILT_TYPE_NAME     = $(__built_type_$(mk_OUT_TYPE))
+mk_BUILT_TYPE_NAME     = $(or $(__built_type_$(mk_OUT_TYPE)),$(mk_OUT_TYPE))
 __built_type_exe       = APPLICATION
 __built_type_shared    = SHARED_LIB
 __built_type_static    = STATIC_LIB
@@ -144,8 +145,12 @@ BUILD_DIR_default      = $(mk_TAG).$(mk_BUILD_MODE)
 mk_BUILD_DIR           = $(or $(BUILD_DIR),.work/$(call mk_get,BUILD_DIR))
 
 OUT_TYPE_doc          ?= type of built binary: $(call mk_opt_set,OUT_TYPE)
+OUT_TYPE              ?= $(OUT_TYPE_default)
 OUT_TYPE_default       = $(firstword $(mk_OUT_TYPE_list))
 mk_OUT_TYPE            = $(call mk_get,OUT_TYPE)
+
+DIST_CFG_list         ?= release
+DIST_OUT_TYPE_list    ?= $(mk_OUT_TYPE_list)
 
 OUT_DIR_doc           ?= output directory for effective output file(s)
 OUT_DIR_default        = $(mk_BUILD_DIR)
@@ -197,7 +202,7 @@ OBJECT_ARCHIVE        ?= $(mk_BUILD_DIR)/.mk.objects.a
 OBJECT_ARCHIVE.static  = $(mk_OUT_FILE)
 mk_OBJECT_ARCHIVE      = $(or $(OBJECT_ARCHIVE.$(mk_OUT_TYPE)),$(OBJECT_ARCHIVE))
 
-mk_CLEARED_FILES      += $(CLEARED_FILES) $(mk_VARIANT_SOURCE)
+mk_CLEARED_FILES      += $(CLEARED_FILES) $(mk_VARIANT_SOURCE) $(mk_LOG_FILE) $(mk_DEPS) $(mk_SRC_CACHE)
 
 SUBPACKAGES_doc       ?= directory list of project prerequisites
 mk_SUBPACKAGES         = $(call mk_get,SUBPACKAGES)
@@ -231,7 +236,8 @@ $(SRC_CACHE_): $(MAKEFILE_LIST)
 $(DEPS_): $(SRC_CACHE_)
 	@$(eval __src_files := $(mk_SOURCE_FILES))
 	@touch $@                                  #< need to touch DEPS_-file BEFORE mk_submake to prevent endless recursion!!!
-	@$(call mk_submake,--quiet,$(__src_files)) #< BUT call submake on source files to ensure they're up-to-date BEFORE updating DEPS_-file!
+	@$(call mk_link,$(mk_VARIANT_PAIRS))       #< create links to variant files
+	@$(call mk_submake,--quiet,$(__src_files)) #< call submake on source files to ensure they're up-to-date
 	@$(call mk_depends,$@,$(__src_files))      #< update DEPS_-file
 	@$(eval ___multi_src_objects := $(call mk_list_multisource,$(__src_files),. . . . >>))
 	@if [ -n "$(___multi_src_objects)" ]; then  \
@@ -248,7 +254,7 @@ built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
 	@if [ -z "$(call seq,$(__src_list),$(mk_SOURCE_FILES))" ]; then \
 		rm -f $(mk_SRC_CACHE)                                       ;\
 	fi
-	@$(mk_MAKE) DEPS_=$(mk_DEPS) SRC_CACHE_=$(mk_SRC_CACHE) OUT_='$(mk_OUT_FILE)' $(mk_OUT_FILE)
+	@+$(mk_MAKE) DEPS_=$(mk_DEPS) SRC_CACHE_=$(mk_SRC_CACHE) OUT_='$(mk_OUT_FILE)' $(mk_OUT_FILE)
 
 
 $(OUT_): $$(mk_OBJECTS)
@@ -277,7 +283,7 @@ $(mk_CFG_list):
 clean_doc = clear build directory [$(mk_BUILD_DIR)] by removing object files
 clean:
 	$(call mk_packages,clean)
-	@rm -f $(mk_CLEARED_FILES) $(mk_LOG_FILE) $(mk_DEPS)
+	@rm -f $(mk_CLEARED_FILES)
 
 
 grep,*_doc = grep pattern in source files: make grep,PATTERN[,GREP-OPTS]; default: GREP-OPTS: -iw

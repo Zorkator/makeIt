@@ -13,7 +13,7 @@ __cmd_max_args := 512
 
 mk_PARAMETERS  += 
 mk_CFG_list    +=
-mk_TARGET_list += std-* help-std dist-* help echo,* eval,* value,*
+mk_TARGET_list += dist-* help echo,* eval,* value,*
 
 mk_NULL       :=
 mk_SPACE      := $(mk_NULL) #
@@ -87,6 +87,7 @@ endef
 
 # $(call mk_submake,ARGS,TARGETLIST,[NUM],[MAKE_VAR],[MESSAGE])
 # NOTE: by default, we call make via $(mk_MAKE) to ensure reading the same makefile again!
+# NOTE: we call make by $(mk_MAKE) to ensure reading the same makefile again!
 define mk_submake
 	$(eval ___num  := $(or $3,$(__cmd_max_args)))
 	$(eval ___make := $($(or $4,mk_MAKE)))
@@ -107,24 +108,12 @@ endef
 
 #-- targets --
 
-std-*_doc = meta target for starting make according to variable STD_SETTINGS: $(or $(STD_SETTINGS),NOT SET). use by e.g. make std-clean,built
-std-%:
-	$(if $(call seq,$*,.o),$(error missing target argument!))
-	$(call mk_submake,$(STD_SETTINGS) $(MAKEFLAGS),$(call mk_ssv,$*),1,,'>> STD-CONFIGURATION:')
-
-std:
-	@$(mk_echo) 'meta target "std" needs a minus-separated target list: e.g. make std-clean  or  make std-clean,built'
-
-help-std_doc = print overview over parameters considering variable STD_SETTINGS
-help-std:
-	@$(mk_MAKE) $(STD_SETTINGS) $(MAKEFLAGS) help
-
-
 dist-*_doc = meta target for starting make on distribution configurations: $(call mk_cartesian,$(DIST_CFG_list),$(DIST_OUT_TYPE_list),-)
 dist-%:
-	$(foreach cfg,$(DIST_CFG_list),\
-		$(foreach type,$(DIST_OUT_TYPE_list),\
-			$(call mk_submake,CFG=$(cfg) OUT_TYPE=$(type),$*,1,,'\n>> DIST-CONFIGURATION:')))
+	+$(foreach tgt,$(call mk_ssv,$*),\
+		$(foreach cfg,$(DIST_CFG_list),\
+			$(foreach type,$(DIST_OUT_TYPE_list),\
+				$(call mk_submake,CFG=$(cfg) OUT_TYPE=$(type),$(tgt),1,,'\n>> DIST-CONFIGURATION:'))))
 
 
 help_doc = print overview over supported parameters and targets

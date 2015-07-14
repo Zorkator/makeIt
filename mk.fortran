@@ -14,8 +14,11 @@ mk_FILE_TYPES    += $(__fc_file_types)
 mk_OUTPUT_DIRS   += $(FC_MOD_DIR)
 mk_CLEARED_FILES += $(mk_BUILD_DIR)/*.o $(mk_BUILD_DIR)/*.mod $(mk_BUILD_DIR)/lib*
 
-mk_FC_list       += gfortran ifort
-mk_ARCH_list     += 64 32
+__builtin_FCs    := gfortran ifort
+__builtin_ARCHs  := 64 32
+
+mk_FC_list        = $(call mk_selective,$(FC_list) $(__builtin_FCs))
+mk_ARCH_list      = $(call mk_selective,$(ARCH_list) $(__builtin_ARCHs))
 cmd_LINK         ?= $(fc_cmd_link.$(mk_OUT_TYPE))#  < proposed linker command
 cmd_FC_version    = $(shell $(fc) $(fc_version) 2>&1 | sed -ne 's/\([0-9]\+\.[0-9.]\+\)/\1/p')
 cmd_depends      += cmd_FC_depends
