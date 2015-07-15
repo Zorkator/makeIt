@@ -6,9 +6,23 @@ include $(dir $(lastword $(MAKEFILE_LIST)))mk.base
 
 mk_PARAMETERS  += LOG LOG_FILE
 mk_TARGET_list += log
-mk_log          = $(mk_echo) $2 '$1' $(call __log,$3)#<          (call mk_log,<message string>,[<echo-opts>],[renew])
-#mk_logged_cmd   = $(call mk_log,$1) && $1 $(call __log,$2,$3)#<  (call mk_logged_cmd,<command string>,[<echo-opts>],[renew])
-mk_logged_cmd  = $(call mk_log,$(strip $1)); __out=$$($1 2>&1); __stat=$$?; $(mk_echo) -n "$$__out" $(call __log,$3); test $$__stat -eq 0
+
+# $(mk_log,MESSAGE_STRING,[ECHO-OPTS],[renew])
+define mk_log
+	$(mk_echo) $2 '$1' $(call __log,$3)
+endef
+
+# $(mk_logged_cmd,CMD_STRING,[ECHO-OPTS],[renew])
+# NOTE: In order to NOT losing the commands return status by writing the log, the given command is executed in a subshell.
+#       Its output and return status are kept in variables __out and __stat.
+#       For restoring the exit status we just test the stored status again after writing the log.
+define mk_logged_cmd
+	$(call mk_log,$(strip $1)) ;\
+	 __out=$$($1 2>&1)         ;\
+	 __stat=$$?                ;\
+	 $(mk_echo) -n "$$__out" $(call __log,$3) ;\
+	 test $$__stat -eq 0
+endef 
 
 #-- parameters ...
 

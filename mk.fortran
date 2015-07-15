@@ -19,9 +19,13 @@ __builtin_ARCHs  := 64 32
 
 mk_FC_list        = $(call mk_selective,$(FC_list) $(__builtin_FCs))
 mk_ARCH_list      = $(call mk_selective,$(ARCH_list) $(__builtin_ARCHs))
-cmd_LINK         ?= $(fc_cmd_link.$(mk_OUT_TYPE))#  < proposed linker command
 cmd_FC_version    = $(shell $(fc) $(fc_version) 2>&1 | sed -ne 's/\([0-9]\+\.[0-9.]\+\)/\1/p')
 cmd_depends      += cmd_FC_depends
+
+# $(cmd_LINK,OUT_FILE,OBJECTS)
+define cmd_LINK
+	$(call fc_cmd_link.$(mk_OUT_TYPE),$1,$2)
+endef
 
 # $(cmd_FC_depends,DEPS_FILE,SOURCE_LIST)
 define cmd_FC_depends
@@ -217,6 +221,7 @@ __fc_cmd_compile     = $(fc) $(fc_c) $(call fc_cflags_of,$(notdir $<)) $< $(fc_o
 __fc_library_dirs    = $(call uniq,$(patsubst %,$(fc_L)%,$(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS)))
 __fc_libraries       = $(patsubst %,$(fc_l)%,$(mk_FC_LIBRARIES))
 __fc_lflags          = $(mk_FC_LFLAGS) $(mk_FC_FLAGS) $(__fc_library_dirs)
+__fc_object_archive  = $(mk_BUILD_DIR)/.mk.objects.a
 
 
 define fc_copy_mods
@@ -224,18 +229,21 @@ define fc_copy_mods
 endef
 
 define fc_cmd_link.exe
-	$(call mk_logged_cmd,$(fl) $(fc_o) $(mk_OUT_FILE) $(__fc_lflags) $(mk_OBJECT_ARCHIVE) $(__fc_libraries) $(mk_FC_LINK_OTHER))
+	$(call mk_create_archive,$(__fc_object_archive),$2)
+	$(call mk_logged_cmd,$(fl) $(fc_o) $1 $(__fc_lflags) $(__fc_object_archive) $(__fc_libraries) $(mk_FC_LINK_OTHER))
 	$(call mk_collect_so,$(mk_FC_LIBRARY_DIRS),$(mk_FC_LIBRARIES))
 endef
 
 define fc_cmd_link.shared
-	$(call mk_logged_cmd,$(fl) $(fc_o) $(mk_OUT_FILE) $(__fc_lflags) $(call fl_archives,$(mk_OBJECT_ARCHIVE)) $(__fc_libraries) $(mk_FC_LINK_OTHER))
-	$(call mk_symlink_so,$(mk_OUT_FILE))
+	$(call mk_create_archive,$(__fc_object_archive),$2)
+	$(call mk_logged_cmd,$(fl) $(fc_o) $1 $(__fc_lflags) $(call fl_archives,$(__fc_object_archive)) $(__fc_libraries) $(mk_FC_LINK_OTHER))
+	$(call mk_symlink_so,$1)
 	$(call fc_copy_mods)
 	$(call mk_collect_so,$(mk_FC_LIBRARY_DIRS),$(mk_FC_LIBRARIES))
 endef
 
 define fc_cmd_link.static
+	$(call mk_create_archive,$1,$2,$(mk_BUILD_DIR),$(mk_FC_LIBRARIES))
 	$(call fc_copy_mods)
 	$(call mk_collect_so,$(mk_FC_LIBRARY_DIRS),$(mk_FC_LIBRARIES))
 endef

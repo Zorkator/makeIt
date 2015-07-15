@@ -98,11 +98,24 @@ define mk_collect_so
     find $(___lib_dirs) \( $(___find_pattern) \) -and -not -path '*/.*' -printf '\ngrabbing dependency %f from %h' -exec cp -a {} $(___target_dir) \; $(mk_ignoreErrors))
 endef
 
-# $(call mk_archive_objects,ARCHIVE)
-define mk_archive_objects
-	cd $(mk_BUILD_DIR) &&\
-		$(call mk_logged_cmd,ar rs $(abspath $1) $(sort $(notdir $(mk_OBJECTS)))) &&\
-	cd -
+# $(mk_find_archives,ARCH_DIRS,ARCH_NAMES)
+define mk_find_archives
+	$(eval ___find_pattern := $(subst ' -,' -or -,$(foreach l,$2,-wholename '*/lib$l*.a')))
+	$(if $(and $1,$2), \
+		$(shell find $1 \( $(___find_pattern) \) -and -not \( -path '*/.*' -or -type d \) -print))
+endef
+
+# $(mk_create_archive,ARCHIVE,OBJECTS,LIB_DIRS,LIB_NAMES)
+define mk_create_archive
+	$(eval ___script   := $(mk_BUILD_DIR)/.mk.ar.script)
+	$(eval ___archives := $(strip $(call mk_find_archives,$3,$4)))
+	@$(call mk_log,ar rs $(abspath $1) $(sort $(notdir $2)) $(___archives))
+	$(call mk_write_file,$(___script),CREATE $1,,"%s %s\n")
+	$(call mk_write_file,$(___script),$2,append,"ADDMOD %s\n")
+	$(foreach arch,$(___archives),\
+		$(call mk_write_file,$(___script),$(arch),append,"ADDLIB %s\n"))
+	$(call mk_write_file,$(___script),SAVE END,append)
+	ar -M < $(___script)
 endef
 
 # $(call mk_depends,DEPS_FILE,FILELIST
@@ -149,6 +162,7 @@ OUT_TYPE              ?= $(OUT_TYPE_default)
 OUT_TYPE_default       = $(firstword $(mk_OUT_TYPE_list))
 mk_OUT_TYPE            = $(call mk_get,OUT_TYPE)
 
+DIST_ARCH_list        ?= $(mk_ARCH)
 DIST_CFG_list         ?= release
 DIST_OUT_TYPE_list    ?= $(mk_OUT_TYPE_list)
 
@@ -258,10 +272,8 @@ built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
 
 
 $(OUT_): $$(mk_OBJECTS)
-	@rm -f $@ $(mk_OBJECT_ARCHIVE)
-	@$(call mk_log,'$(call mk_frame,linking target)')
-	@$(call mk_archive_objects,$(mk_OBJECT_ARCHIVE))
-	@$(cmd_LINK)
+	@$(call mk_log,'$(call mk_frame,linking target $@)')
+	@$(call cmd_LINK,$@,$^)
 	@$(call mk_log)
 	@if [ -e "$@" ]; then                                      \
 		if [ -n "$(mk_BINARY_TAG)" ]; then                       \

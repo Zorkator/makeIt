@@ -13,9 +13,13 @@ mk_CLEARED_FILES += $(mk_BUILD_DIR)/*.o
 
 mk_CC_list       += gcc
 mk_ARCH_list     += 64 32
-cmd_LINK         ?= $(cc_cmd_link.$(mk_OUT_TYPE))# < proposed linker command
 cmd_CC_version    = $(shell $(fc) $(fc_version) 2>&1 | sed -ne 's/\([0-9]\+\.[0-9.]\+\)/\1/p')
 cmd_depends      += cmd_CC_depends
+
+# $(cmd_LINK,OUT_FILE,OBJECTS)
+define cmd_LINK
+	$(call cc_cmd_link.$(mk_OUT_TYPE),$1,$2)
+endef
 
 # $(cmd_CC_depends,DEPS_FILE,SOURCE_LIST)
 define cmd_CC_depends
@@ -154,20 +158,24 @@ __cc_cmd_compile     = $(cc) $(cc_c) $(call __cc_cflags_of,$(notdir $<)) $< $(cc
 __cc_library_dirs    = $(call uniq,$(patsubst %,$(cc_L)%,$(mk_BUILD_DIR) $(mk_CC_LIBRARY_DIRS)))
 __cc_libraries       = $(patsubst %,$(cc_l)%,$(mk_CC_LIBRARIES))
 __cc_lflags          = $(mk_CC_LFLAGS) $(mk_CC_FLAGS) $(__cc_library_dirs)
+__cc_object_archive  = $(mk_BUILD_DIR)/.mk.objects.a
 
 
 define cc_cmd_link.exe
+	$(call mk_create_archive,$(__cc_object_archive),$2)
 	$(call mk_logged_cmd,$(cc) $(cc_o) $(mk_OUT_FILE) $(__cc_lflags) $(mk_OBJECT_ARCHIVE) $(__cc_libraries) $(mk_CC_LINK_OTHER))
 	$(call mk_collect_so,$(mk_CC_LIBRARY_DIRS),$(mk_CC_LIBRARIES))
 endef
 
 define cc_cmd_link.shared
+	$(call mk_create_archive,$(__cc_object_archive),$2)
 	$(call mk_logged_cmd,$(cc) $(cc_o) $(mk_OUT_FILE) $(__cc_lflags) $(call cl_archives,$(mk_OBJECT_ARCHIVE)) $(__cc_libraries) $(mk_CC_LINK_OTHER))
 	$(call mk_symlink_so,$(mk_OUT_FILE))
 	$(call mk_collect_so,$(mk_CC_LIBRARY_DIRS),$(mk_CC_LIBRARIES))
 endef
 
 define cc_cmd_link.static
+	$(call mk_create_archive,$1,$2,$(mk_BUILD_DIR),$(mk_CC_LIBRARIES))
 	$(call mk_collect_so,$(mk_CC_LIBRARY_DIRS),$(mk_CC_LIBRARIES))
 endef
 

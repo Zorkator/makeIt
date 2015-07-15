@@ -79,10 +79,10 @@ define mk_read_file
 	$(shell cat $1 2>&1)
 endef
 
-# $(call mk_write_file,FILENAME,LIST,[append])
+# $(call mk_write_file,FILENAME,LIST,[append],[fmt])
 define mk_write_file
 	: $(if $(and $2,$3),,>$1)
-	$(call mk_xargs,printf "%s\n" >>$1,$2,$(__cmd_max_args))
+	$(call mk_xargs,printf $(or $4,"%s\n") >>$1,$2,$(__cmd_max_args))
 endef
 
 # $(call mk_submake,ARGS,TARGETLIST,[NUM],[MAKE_VAR],[MESSAGE])
@@ -108,12 +108,13 @@ endef
 
 #-- targets --
 
-dist-*_doc = meta target for starting make on distribution configurations: $(call mk_cartesian,$(DIST_CFG_list),$(DIST_OUT_TYPE_list),-)
+dist-*_doc = meta target for starting make on distribution configurations: $(call mk_cartesian,$(DIST_ARCH_list),$(call mk_cartesian,$(DIST_CFG_list),$(DIST_OUT_TYPE_list),-),-)
 dist-%:
 	+$(foreach tgt,$(call mk_ssv,$*),\
-		$(foreach cfg,$(DIST_CFG_list),\
-			$(foreach type,$(DIST_OUT_TYPE_list),\
-				$(call mk_submake,CFG=$(cfg) OUT_TYPE=$(type),$(tgt),1,,'\n>> DIST-CONFIGURATION:'))))
+		$(foreach arch,$(DIST_ARCH_list),\
+			$(foreach cfg,$(DIST_CFG_list),\
+				$(foreach type,$(DIST_OUT_TYPE_list),\
+					$(call mk_submake,CFG=$(cfg) OUT_TYPE=$(type),$(tgt),1,,'\n>> DIST-CONFIGURATION:')))))
 
 
 help_doc = print overview over supported parameters and targets
