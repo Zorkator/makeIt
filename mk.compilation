@@ -271,7 +271,7 @@ built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
 	@+$(mk_MAKE) DEPS_=$(mk_DEPS) SRC_CACHE_=$(mk_SRC_CACHE) OUT_='$(mk_OUT_FILE)' $(mk_OUT_FILE)
 
 
-$(OUT_): $$(mk_OBJECTS)
+$(OUT_): $(SRC_CACHE_) $$(mk_OBJECTS)
 	@$(call mk_log,'$(call mk_frame,linking target $@)')
 	@$(call cmd_LINK,$@,$^)
 	@$(call mk_log)
