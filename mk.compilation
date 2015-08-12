@@ -111,7 +111,7 @@ define mk_create_archive
 	$(eval ___archives := $(strip $(call mk_find_archives,$3,$4)))
 	@$(call mk_log,ar rs $(abspath $1) $(sort $(notdir $2)) $(___archives))
 	$(call mk_write_file,$(___script),CREATE $1,,"%s %s\n")
-	$(call mk_write_file,$(___script),$2,append,"ADDMOD %s\n")
+	$(call mk_write_file,$(___script),$(sort $2),append,"ADDMOD %s\n")
 	$(foreach arch,$(___archives),\
 		$(call mk_write_file,$(___script),$(arch),append,"ADDLIB %s\n"))
 	$(call mk_write_file,$(___script),SAVE END,append)
@@ -244,20 +244,20 @@ mk_BINARY_TAG_frame    = $(if $(mk_BINARY_TAG),\
 $(SRC_CACHE_): $(MAKEFILE_LIST)
 	@$(mk_echo) ''$(call mk_frame,recaching source files ...)
 	@mkdir -p $(mk_BUILD_DIR) #<  ensure build dir explicitly - can't do this by prerequisite, as its time stamp changes!
+	@$(call mk_link,$(mk_VARIANT_PAIRS))         #< create links to variant files
 	@$(call mk_write_file,$@,$(mk_SOURCE_FILES)) #< write list of source files to cache file
 
 
 $(DEPS_): $(SRC_CACHE_)
 	@$(eval __src_files := $(mk_SOURCE_FILES))
 	@touch $@                                  #< need to touch DEPS_-file BEFORE mk_submake to prevent endless recursion!!!
-	@$(call mk_link,$(mk_VARIANT_PAIRS))       #< create links to variant files
 	@$(call mk_submake,--quiet,$(__src_files)) #< call submake on source files to ensure they're up-to-date
 	@$(call mk_depends,$@,$(__src_files))      #< update DEPS_-file
 	@$(eval ___multi_src_objects := $(call mk_list_multisource,$(__src_files),. . . . >>))
 	@if [ -n "$(___multi_src_objects)" ]; then  \
 		$(call mk_log,\nWARNING: Your makefile effectively specifies multiple source files yielding the same object!                              \
 		              \n         For compiling the following objects make will consider only the first source file:\n\n $(___multi_src_objects)) ;\
-		read -p "press ENTER to continue"                                                                                                        ;\
+		$(if $(NON_INTERACTIVE),echo ,)read -p "press ENTER to continue"                                                                         ;\
 	fi
 
 
@@ -273,7 +273,7 @@ built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
 
 $(OUT_): $(SRC_CACHE_) $$(mk_OBJECTS)
 	@$(call mk_log,'$(call mk_frame,linking target $@)')
-	@$(call cmd_LINK,$@,$(mk_OBJECTS))
+	@$(call cmd_LINK,$@,$(filter-out $(SRC_CACHE_),$^))
 	@$(call mk_log)
 	@if [ -e "$@" ]; then                                      \
 		if [ -n "$(mk_BINARY_TAG)" ]; then                       \

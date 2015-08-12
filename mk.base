@@ -44,7 +44,7 @@ mk_ssv            = $(subst $(mk_COMMA),$(mk_SPACE),$(strip $1))#<              
 mk_reverse        = $(if $1,$(call mk_reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))#<     mk_reverse( v1 v2 ... )            : ... v2 v1
 mk_defined        = $(patsubst undefined,,$(origin $1))#<                                          mk_defined( varId )                : origin(varId) | ''
 mk_var            = $(if $(call mk_defined,$1),\\$($1),)#<                                         mk_var( varId )                    : \\$(varId) | ''
-mk_val            = $(or $($1),$($1_default))#<                                                    mk_val( varId )                    : val | default | ''
+mk_val            = $(or $($1),$(call $1_default))#<                                               mk_val( varId )                    : val | default | ''
 mk_map            = $(foreach i,$2,$(call $1,$i))#<                                                mk_map( func, v1 v2 ... )          : res1 res2 ...
 mk_cartesian      = $(shell $(mk_echo) {$(call mk_csv,$(patsubst %,%$3,$1))}{$(call mk_csv,$2)})#< mk_cartesian( a b, 1 2,-)          : a-1 a-2 b-1 b-2
 mk_lines          = $(shell $(mk_echo) "$1" | wc -l)#<                                             mk_lines( string )                 : num of lines
@@ -103,7 +103,7 @@ endef
 # $(call mk_frame,STRING)
 define mk_frame
 	$(eval ___line := $(subst x ,-,$(call int_encode,$(call plus,4,$(call strlen,$1))) ))\
-	'$(___line)\n ] $1 [\n $(___line)'
+	'$(___line)$(or $2,\n) ] $1 [$(or $2,\n) $(___line)'
 endef
 
 #-- targets --
