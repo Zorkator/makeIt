@@ -230,7 +230,7 @@ endef
 
 define fc_cmd_link.exe
 	$(call mk_create_archive,$(__fc_object_archive),$2)
-	$(call mk_logged_cmd,$(fl) $(fc_o) $1 $(__fc_lflags) $(__fc_object_archive) $(__fc_libraries) $(mk_FC_LINK_OTHER))
+	$(call mk_logged_cmd,$(fl) $(fc_o) $1 $(__fc_lflags) $(call fl_archives,$(__fc_object_archive)) $(__fc_libraries) $(mk_FC_LINK_OTHER))
 	$(call mk_collect_so,$(mk_FC_LIBRARY_DIRS),$(mk_FC_LIBRARIES))
 endef
 
