@@ -92,7 +92,12 @@ fc_m         = $(__fc_m_$(mk_FC))#                < architecture
 fc_omp       = $(__fc_omp_$(mk_FC))#              < enable OpenMP extensions
 fc_save      = $(__fc_save_$(mk_FC))#             < place local variables in static memory
 fc_Wsrc_cut  = $(__fc_Wsrc_cut_$(mk_FC))#         < warn if source lines are truncated
-fc_backtrace = $(__fc_backtrace_$(mk_FC))#        < generate backtrace on serious runtime errors
+fc_backtrace = $(__fc_backtrace_$(mk_FC))#        < generate backtrace on serious runtime errorsA
+fc_fpscomp   = $(call __fc_fpscomp_$(mk_FC),$1)#  < runtime compatibility flags ... (ifort-only!)
+#                                                      valid arguments: none, [no]filesfromcmd, [no]general, [no]ioformat,
+#                                                                       all,  [no]libs, [no]ldio_spacing, [no]logicals
+fc_fpmodel   = $(call __fc_fpmodel_$(mk_FC),$1)#  < flags controlling semantics of floating-point calculations (ifort-only!)
+#                                                      valid arguments: precise, fast, strict, source
 fc_fpe       = $(call __fc_fpe_$(mk_FC),$1)#      < set fpe-trap mode: $(call fc_fpe,{0,1,3})
 #                                                      0: traps invalid, zero, overflow AND (ifort-only:) flush-to-zero
 #                                                      1: no traps, (ifort-only:) flush-to-zero
@@ -143,6 +148,8 @@ __fc_omp_gfortran       := -fopenmp
 __fc_save_gfortran      := -fno-automatic
 __fc_Wsrc_cut_gfortran  := -Wline-truncation
 __fc_backtrace_gfortran := -fbacktrace
+__fc_fpscomp_gfortran   :=
+__fc_fpmodel_gfortran   :=
 __fc_fpe_0_gfortran     := -ffpe-trap=invalid,zero,overflow
 __fc_fpe_1_gfortran     :=
 __fc_fpe_3_gfortran     :=
@@ -181,6 +188,8 @@ __fc_omp_ifort          := -openmp
 __fc_save_ifort         := -save
 __fc_Wsrc_cut_ifort     := -warn truncated_source
 __fc_backtrace_ifort    := -traceback
+__fc_fpscomp_ifort       = -fpscomp $(call mk_csv,$1)
+__fc_fpmodel_ifort       = -fp-model $1
 __fc_fpe_ifort           = -fpe$1 #< CAUTION: -fpe-all=0 sounds more sensible here - BUT leads to nasty FP-Exceptions!
 __fc_fpp_ifort          := -fpp -allow nofpp-comments
 __fc_fpp77_ifort        := $(__fc_fpp_ifort)

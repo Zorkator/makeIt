@@ -29,15 +29,16 @@ mk_FILE_PATTERNS_RE = $(sort $(FILE_PATTERNS_RE))
 mk_OPT_list         = $(filter-out BUILD_MODE,$(mk_OPT_CLASSES))
 mk_OPT_CLASS_list   = $(sort $(mk_OPT_CLASSES) mk_ANY)
 
-mk_tags             = $(foreach c,$(filter-out $1,$(mk_OPT_CLASS_list)),$($1.$(call mk_val,$c)))
-mk_get              = $(or $($1),$(strip $(call mk_tags,$(notdir $1))),$($1_default))
+mk_tag_values_of    = $(foreach c,$(filter-out $1,$(mk_OPT_CLASS_list)),$($1.$(call mk_val,$c)))#<        get variable values of all tags in effect!
+mk_tags_or_default  = $(or $(strip $(call mk_tag_values_of,$(notdir $1))),$($1_default))#<                get either tag-values or default value of variable
+mk_get              = $(or $($1),$(if $(call mk_defined,$1),$(mk_NULL),$(call mk_tags_or_default,$1)))#<  get either value, tag-values or default of variable
 mk_fileType_opts    = $(call mk_pattern_opts,mk_FILE_PATTERNS,$1) $(call mk_patternRE_opts,mk_FILE_PATTERNS_RE,$1)
 mk_variant_of       = $(dir $1).variant.$(notdir $1)# < build rules urge us to link in source directory :-(
 mk_chain_args       = $(subst ' -,' -$1 -,$2)
 
 any_source          = $(foreach t,$(mk_FILE_TYPES),$(wildcard *.$(t)))
 any_source_in       = $(foreach t,$(mk_FILE_TYPES),$(wildcard $(call mk_norm_dir,$1)/*.$(t)))
-scan_source         = $(foreach d,$(mk_SOURCE_DIRS),$(call any_source_in,$d))
+scan_source         = $(info scanning source dirs ...)$(foreach d,$(mk_SOURCE_DIRS),$(call any_source_in,$d))
 
 scan_file_pattern   = $(call mk_chain_args,or,$(foreach x,$(mk_FILE_TYPES),-name '*.$x'))
 ignore_dir_pattern  = $(call mk_chain_args,or,$(foreach x,$(mk_IGNORE_DIRS),-path '*/$x/*') -path '*/.*')
@@ -110,11 +111,11 @@ define mk_create_archive
 	$(eval ___script   := $(mk_BUILD_DIR)/.mk.ar.script)
 	$(eval ___archives := $(strip $(call mk_find_archives,$3,$4)))
 	@$(call mk_log,ar rs $(abspath $1) $(sort $(notdir $2)) $(___archives))
-	$(call mk_write_file,$(___script),CREATE $1,,"%s %s\n")
-	$(call mk_write_file,$(___script),$(sort $2),append,"ADDMOD %s\n")
+	$(call mk_write_file,$(___script),CREATE $1,"%s %s\n")
+	$(call mk_write_file,$(___script),$(sort $2),"ADDMOD %s\n",append)
 	$(foreach arch,$(___archives),\
-		$(call mk_write_file,$(___script),$(arch),append,"ADDLIB %s\n"))
-	$(call mk_write_file,$(___script),SAVE END,append)
+		$(call mk_write_file,$(___script),$(arch),"ADDLIB %s\n",append))
+	$(call mk_write_file,$(___script),SAVE END,,append)
 	ar -M < $(___script)
 endef
 
@@ -203,7 +204,7 @@ SOURCE_DIRS_default    = $(call scan_source_dirs,.)
 mk_SOURCE_DIRS         = $(call mk_get,SOURCE_DIRS)
 mk_IGNORE_DIRS         = $(call mk_get,IGNORE_DIRS)
 
-SOURCE_FILES.%        += $(scan_source)
+SOURCE_FILES_default   = $(scan_source)
 mk_SOURCE_FILES        = $(filter-out $(mk_IGNORE_FILES),$(call mk_get,SOURCE_FILES) $(mk_VARIANT_SOURCE))
 mk_IGNORE_FILES        = $(call mk_get,IGNORE_FILES)
 mk_VARIANT_FILES       = $(call mk_get,VARIANT_FILES)

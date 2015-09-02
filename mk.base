@@ -79,10 +79,10 @@ define mk_read_file
 	$(shell cat $1 2>&1)
 endef
 
-# $(call mk_write_file,FILENAME,LIST,[append],[fmt])
+# $(call mk_write_file,FILENAME,LIST,[fmt],[clear|append]) #< NOTE: clear is default!
 define mk_write_file
-	: $(if $(and $2,$3),,>$1)
-	$(call mk_xargs,printf $(or $4,"%s\n") >>$1,$2,$(__cmd_max_args))
+	: $(if $(call seq,$4,append),,>$1)
+	$(call mk_xargs,printf $(or $3,"%s\n") >>$1,$2,$(__cmd_max_args))
 endef
 
 # $(call mk_submake,ARGS,TARGETLIST,[NUM],[MAKE_VAR],[MESSAGE])
