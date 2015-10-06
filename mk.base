@@ -54,6 +54,7 @@ mk_disabled       = $(patsubst -%,%,$(filter -%,$1))#<                          
 mk_enabled        = $(filter-out $(call mk_disabled,$1),$(call mk_unsigned,$1))#<                  mk_enabled( -v1 v2 v3 )            : v2
 mk_selective      = $(call uniq,$(call mk_enabled,$1))#<                                           mk_selective( v1 v2 v3 -v1 )       : v2 v3
 mk_file_list      = $(call $1,$(foreach t,$2,%.$t),$3)#<                                           mk_file_list( func, extensions, filelist )
+mk_test           = $(if $($1),True,False)#<                                                       mk_test( varId )                   : True | False
 
 ___split_kv       = $(subst =, =,$1)
 mk_keys           = $(filter-out =%,$(call ___split_kv,$1))#<                                      mk_keys( A=0 B=3 C=X )  : A B C
@@ -130,7 +131,7 @@ help:
 
 help,*_doc = echo value of make variable and specify its origin, e.g. make origin.CFG
 help,%:
-	@$(mk_echo) $* = [$(origin $*)] $($*)
+	@$(mk_echo) $* = [$(origin $*)] '"'$($*)'"'
 
 
 echo,*_doc = evaluate value of make variable 
