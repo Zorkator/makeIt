@@ -25,7 +25,7 @@ endef
 define cmd_CC_depends
 	$(eval ___cc_src := $(call mk_file_list,filter,$(__cc_file_types),$2))
 	$(if $(___cc_src),\
-		$(call mk_xargs,g++ -MM >> $1,$(___cc_src)) \
+		$(call mk_xargs,g++ $(__cc_include_dirs) $(__cc_pp_defines) -MM >> $1,$(___cc_src)) \
 		sed -i 's|^\(.*\.o:\)|$(mk_BUILD_DIR)/\1|' $1)
 endef
 
