@@ -9,7 +9,7 @@ include $(dir $(lastword $(MAKEFILE_LIST)))mk.base
 
 mk_PARAMETERS   += BUILD_MODE CFG ARCH TAG BUILD_DIR OUT_TYPE OUT_DIR OUT_NAME OUT_FILE_NAME OUT_FILE OUT_UMASK SUBPACKAGES
 mk_OPT_CLASSES  += BUILD_MODE CFG ARCH
-mk_TARGET_list  += built clean grep,* $(TARGETS)
+mk_TARGET_list  += built clean rescan grep,* $(TARGETS)
 mk_FILE_TYPES   += 
 mk_OUTPUT_DIRS  += $(mk_BUILD_DIR) $(mk_OUT_DIR)
 
@@ -297,6 +297,11 @@ clean_doc = clear build directory [$(mk_BUILD_DIR)] by removing object files
 clean:
 	$(call mk_packages,clean)
 	@rm -f $(mk_CLEARED_FILES)
+
+
+rescan_doc = trigger rescan of source files and recreation of build dependencies
+rescan:
+	@rm -f $(mk_SRC_CACHE)
 
 
 grep,*_doc = grep pattern in source files: make grep,PATTERN[,GREP-OPTS]; default: GREP-OPTS: -iw
