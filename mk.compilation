@@ -230,9 +230,9 @@ ___pkg_compat.shared  := BUILD_MODE=shared
 mk_BINARY_TAG          = $(call mk_get,BINARY_TAG)
 mk_BINARY_TAG_len      = $(call mk_lines,$(mk_BINARY_TAG))
 mk_BINARY_TAG_frame    = $(if $(mk_BINARY_TAG),\
-                              \n $(mk_BINARY_TAG)                       \n\
-                              tail -$(call plus,$(mk_BINARY_TAG_len),2) \n\
-                              head -$(mk_BINARY_TAG_len)\n,)
+                              \n $(mk_BINARY_TAG)                        \n\
+                              tail -n$(call plus,$(mk_BINARY_TAG_len),2) \n\
+                              head -n$(mk_BINARY_TAG_len)\n,)
 
 #-- targets --
 
