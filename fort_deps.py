@@ -17,21 +17,22 @@ Options:
 	--verbose               be verbose, print comment lines with process info.
 """
 
-import docopt, re, sys, shlex
+import docopt, re, sys, shlex, codecs
 from os.path    import splitext as _splitext, split as _splitpath, join as _joinpath
 from subprocess import Popen as _Popen, PIPE as _PIPE
 
 
 class DepsCrawler(object):
 
-	_scanMod = re.compile( r'^\s*module\s+(\w+)\s*(?:!.*|)$',          re.IGNORECASE ).match
-	_scanInc = re.compile( r'^#\s*include\s*["\'].*?(\w+)\.fmod["\']', re.IGNORECASE ).match
-	_scanUse = re.compile( r'^\s*use\s+(\w+)',                         re.IGNORECASE ).match
+	_scanMod   = re.compile( r'^\s*module\s+(\w+)\s*(?:!.*|)$',          re.IGNORECASE ).match
+	_scanInc   = re.compile( r'^#\s*include\s*["\'].*?(\w+)\.fmod["\']', re.IGNORECASE ).match
+	_scanUse   = re.compile( r'^\s*use\s+(\w+)',                         re.IGNORECASE ).match
+	_tryCodecs = ['latin-1', 'utf-8']
 
 	@staticmethod
-	def _getStream( fileName, fpp ):
+	def _getStream( fileName, fpp, codec ):
 		if fpp: return _Popen( shlex.split( fpp.format( f=fileName ) ), stdout=_PIPE ).stdout
-		else  : return open( fileName, 'r' )
+		else  : return codecs.open( fileName, 'r', codec )
 
 
 	def __init__( self, **kwArgs ):
@@ -53,25 +54,35 @@ class DepsCrawler(object):
 		for fileName in fileSet:
 			try  : self.scanFile( fileName, kwArgs['--fpp'] )
 			except IOError as e:
-				self._out( 2, "WARNING: %s skipped: %s" % (fileName, e) )
+				self._out( 2, "WARNING: {0} skipped: {1}".format( fileName, e ) )
 		self._log( "\n", "module definitions:", *map( ': '.join, self._modTab.items() ) )
 
 
+	def _readFile( self, fileName, fpp ):
+		for codec in self._tryCodecs:
+			try:
+				with self._getStream( fileName, fpp, codec ) as stream:
+					return stream.readlines()
+			except UnicodeError:
+				self._out( 2, "WARNING: failed at decoding {0} by codec {1}".format( fileName, codec ) )
+		else:
+			raise UnicodeDecodeError( "unable to decode {0}".format( fileName ) )
+
+
 	def scanFile( self, fileName, fpp ):
-		with self._getStream( fileName, fpp ) as stream:
-			uses = self._fileTab.setdefault( fileName, set() )
-			for line in stream.readlines():
-				use = self._scanUse( line )
-				if use:
-					uses.add( use.groups()[0].lower() )
-				else:
-					mod = self._scanMod( line ) or self._scanInc( line )
-					if mod:
-						self._modTab[ mod.groups()[0].lower() ] = fileName
+		uses = self._fileTab.setdefault( fileName, set() )
+		for line in self._readFile( fileName, fpp ):
+			use = self._scanUse( line )
+			if use:
+				uses.add( use.groups()[0].lower() )
+			else:
+				mod = self._scanMod( line ) or self._scanInc( line )
+				if mod:
+					self._modTab[ mod.groups()[0].lower() ] = fileName
 
 
 	def _out( self, ch, *msg ):
-		(None, sys.stdout, sys.stderr)[ch].write( '# %s\n' % '\n# '.join( msg ) )
+		(None, sys.stdout, sys.stderr)[ch].write( '# {0}\n'.format( '\n# '.join( msg ) ) )
 
 
 	def _obj( self, fileName ):
