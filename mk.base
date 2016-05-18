@@ -107,6 +107,12 @@ define mk_frame
 	'$(___line)$(or $2,\n) ] $1 [$(or $2,\n) $(___line)'
 endef
 
+# $(call mk_warning,STRING)
+define mk_warning
+	$(eval ___line := $(subst x ,!,$(call int_encode,$(call plus,13,$(call strlen,$1))) ))\
+	$(info )$(info $(___line))$(info ! WARNING: $1 !)$(info $(___line))$(info )
+endef
+
 #-- targets --
 
 dist-*_doc = meta target for starting make on distribution configurations: $(call mk_cartesian,$(DIST_ARCH_list),$(call mk_cartesian,$(DIST_CFG_list),$(DIST_OUT_TYPE_list),-),-)
