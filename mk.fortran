@@ -103,6 +103,7 @@ fc_fpe       = $(call __fc_fpe_$(mk_FC),$1)#      < set fpe-trap mode: $(call fc
 #                                                      1: no traps, (ifort-only:) flush-to-zero
 #                                                      3: no traps
 fc_trapuv    = $(__fc_trapuv_$(mk_FC))#           < trap uninitialized variables by initializing them to "unusual" values
+fc_check_all = $(__fc_check_all_$(mk_FC))
 fc_fpp       = $(__fc_fpp_$(mk_FC))#              < enable preprocessor
 fc_fpp77     = $(__fc_fpp77_$(mk_FC))#            < enable preprocessor f77 style
 fc_fpp95     = $(__fc_fpp95_$(mk_FC))#            < enable preprocessor f95 style
@@ -156,6 +157,7 @@ __fc_fpe_1_gfortran     :=
 __fc_fpe_3_gfortran     :=
 __fc_fpe_gfortran        = $(__fc_fpe_$1_gfortran)
 __fc_trapuv_gfortran    := -finit-real=snan -finit-integer=-1 -finit-character=0 -finit-logical=false
+__fc_check_all_gfortran := -fcheck=pointer,bounds
 __fc_fpp_gfortran       := -cpp
 __fc_fpp77_gfortran     := -x f77-cpp-input
 __fc_fpp95_gfortran     := -x f95-cpp-input
@@ -194,6 +196,7 @@ __fc_fpscomp_ifort       = -fpscomp $(call mk_csv,$1)
 __fc_fpmodel_ifort       = -fp-model $1
 __fc_fpe_ifort           = -fpe$1 #< CAUTION: -fpe-all=0 sounds more sensible here - BUT leads to nasty FP-Exceptions!
 __fc_trapuv_ifort       := -ftrapuv
+__fc_check_all_ifort    := -check pointer,bounds,uninit,format,output_conversion
 __fc_fpp_ifort          := -fpp -allow nofpp-comments
 __fc_fpp77_ifort        := $(__fc_fpp_ifort)
 __fc_fpp95_ifort        := $(__fc_fpp_ifort)
