@@ -115,6 +115,7 @@ fc_L         = $(__fc_L_$(mk_FC))#                < link directory
 fc_l         = $(__fc_l_$(mk_FC))#                < link library
 fc_mod       = $(__fc_mod_$(mk_FC))#              < directory for module output
 fc_pic       = $(__fc_pic_$(mk_FC))#              < generate position independent code (pic) for shared libraries
+fc_threads   = $(__fc_threads_$(mk_FC))#          < enable threading support
 #
 fl           = $(__fl_$(mk_FC))#                  < linker call
 fl_soname    = $(__fl_soname_$(mk_FC))#           < set soname
@@ -169,6 +170,7 @@ __fc_L_gfortran         := -L
 __fc_l_gfortran         := -l
 __fc_mod_gfortran       := -J
 __fc_pic_gfortran       := -shared -fPIC
+__fc_threads_gfortran   := -pthread
 #
 __fl_gfortran           := gfortran
 __fl_soname_gfortran    := -Wl,-soname,
@@ -212,6 +214,7 @@ __fc_L_ifort            := -L
 __fc_l_ifort            := -l
 __fc_mod_ifort          := -module
 __fc_pic_ifort          := -shared -fPIC
+__fc_threads_ifort      := -threads
 #
 __fl_ifort              := ifort
 __fl_soname_ifort       := -Wl,-soname=
