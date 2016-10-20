@@ -85,9 +85,12 @@ define mk_packages
 		@$(mk_echo))
 endef
 
+# $(call ___reduce_so,SO_FILENAME)
+___reduce_so = $(if $(findstring .so.,$1),$1 $(call ___reduce_so,$(basename $1)),$1)
+
 # $(call mk_symlink_so,SO_FILENAME)
 define mk_symlink_so
-	$(call mk_link,$(notdir $1) $(basename $1) $(notdir $1) $(basename $(basename $1)))
+	$(call mk_link,$(foreach i,$(call rest,$(call ___reduce_so,$1)),$(notdir $1) $i))
 endef
 
 # $(call mk_collect_so,LIB_DIRS,SO_NAMES[,TARGET_DIR])
