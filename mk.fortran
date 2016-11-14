@@ -27,6 +27,12 @@ define cmd_LINK
 	$(call fc_cmd_link.$(mk_OUT_TYPE),$1,$2)
 endef
 
+__have_python=$(shell which python >/dev/null 2>&1 && echo 0 || echo 1 )
+ifeq ($(__have_python), 1)
+   $(error python not found in PATH, but it is necessary to create dependency lists to compile Fortran sources)
+endif
+
+
 # $(cmd_FC_depends,DEPS_FILE,SOURCE_LIST)
 define cmd_FC_depends
 	$(eval ___fc_src := $(call mk_file_list,filter,$(__fc_file_types),$2))
@@ -74,7 +80,7 @@ mk_FC_LIBRARIES      = $(call mk_get,FC_LIBRARIES)
 FC_LIBRARY_DIRS_doc ?= list of library directories
 mk_FC_LIBRARY_DIRS   = $(call mk_get,FC_LIBRARY_DIRS)
 
-FC_LINK_OTHER_doc   ?= list of other link input files 
+FC_LINK_OTHER_doc   ?= list of other link input files
 mk_FC_LINK_OTHER     = $(call mk_get,FC_LINK_OTHER)
 
 #-- exposed compiler switches --
@@ -182,7 +188,7 @@ __fl_rpath_gfortran     := -Wl,-rpath,
 __fl_no_undef_gfortran  := -Wl,--no-undefined
 __fl_arch_on_gfortran   := -Wl,--whole-archive
 __fl_arch_off_gfortran  := -Wl,--no-whole-archive
-                        
+
 __fc_ifort              := ifort
 __fc_version_ifort      := -V
 __fc_c_ifort            := -c
