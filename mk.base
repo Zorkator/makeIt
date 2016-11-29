@@ -22,9 +22,11 @@ mk_COMMA         := ,
 mk_DOLLAR        := $$
 mk_ANY           := %
 mk_MAKE           = $(MAKE) -f $(firstword $(MAKEFILE_LIST))
+mk_PROJECT_DIR    = $(dir $(firstword $(MAKEFILE_LIST)))
 
 mk_ignoreErrors  := 2> /dev/null || :
 mk_echo          := /bin/echo -e
+mk_keepNL        := xargs -I {} echo '{}\n'
 mk_now            = $(shell date '+%d.%m.%Y %T')
 mk_prompt         = $(shell read -p "$(if $1,$1,press ENTER to continue) " x && echo "$$x")
 mk_pwd            = $(abspath .)

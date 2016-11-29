@@ -55,6 +55,11 @@ svn_branch_id       = $(patsubst $(svn_repo_root)/%,%,$(svn_repo_url))
 svn_modified        = $(shell svn st | grep "^M " | awk '{print $$NF}')
 svn_modified_tab    = $(call mk_join,\\\n,$(svn_modified))
 
+mk_frameBinaryTag   = $(if $1,\
+                           \n $1                                     \n\
+                           tail -n$(call plus,$(call mk_lines,$1),2) \n\
+                           head -n$(call mk_lines,$1)\n,)
+
 # $(call mk_list_multisource,SOURCE_FILES,[ITEM_INDENT],[FUNC=mk_args])
 mk_list_multisource = $(strip $(call ___object_source_of,$(or $1,$(mk_SOURCE_FILES)),$2,$3))
 
@@ -231,11 +236,8 @@ mk_pkg_reflag          = $(call mk_flag_replace,$(mk_PKG_MAKEFLAGS),$1 $(___pkg_
 ___pkg_compat.shared  := BUILD_MODE=shared
 
 mk_BINARY_TAG          = $(call mk_get,BINARY_TAG)
-mk_BINARY_TAG_len      = $(call mk_lines,$(mk_BINARY_TAG))
-mk_BINARY_TAG_frame    = $(if $(mk_BINARY_TAG),\
-                              \n $(mk_BINARY_TAG)                        \n\
-                              tail -n$(call plus,$(mk_BINARY_TAG_len),2) \n\
-                              head -n$(mk_BINARY_TAG_len)\n,)
+mk_BINARY_TAG_frame    = $(call mk_get,BINARY_TAG_frame)
+___framedBinaryTag     = $(or $(mk_BINARY_TAG_frame),$(call mk_frameBinaryTag,$(mk_BINARY_TAG)))
 
 #-- targets --
 
@@ -280,9 +282,9 @@ $(OUT_): $(SRC_CACHE_) $$(mk_OBJECTS)
 	@$(call cmd_LINK,$@,$(filter-out $(SRC_CACHE_),$^))
 	@$(call mk_log)
 	@if [ -e "$@" ]; then                                      \
-		if [ -n "$(mk_BINARY_TAG)" ]; then                       \
+		if [ -n "$(___framedBinaryTag)" ]; then                  \
 			$(call mk_log,'$(call mk_frame,tagging binary $@)')   ;\
-			$(call mk_log,$(mk_BINARY_TAG_frame),-n) | tee -a $@  ;\
+			$(call mk_log,$(___framedBinaryTag),-n) | tee -a $@  ;\
 		fi                                                      ;\
 		if [ -n "$(mk_OUT_UMASK)" ]; then                        \
 			chmod $(mk_OUT_UMASK) $@                              ;\
