@@ -242,6 +242,7 @@ __fc_pp_defines      = $(mk_FC_PP_DEFINES:%=$(fc_D)%)
 __fc_include_dirs    = $(patsubst %,$(fc_I)%,$(filter-out $(mk_FC_MOD_DIR),$(mk_BUILD_DIR) $(mk_FC_INCLUDE_DIRS)))
 __fc_cflags          = $(__fc_include_dirs) $(__fc_pp_defines) $(fc_mod) $(mk_FC_MOD_DIR) $(mk_FC_FLAGS) $(mk_FC_CFLAGS)
 fc_cflags_of         = $(or $(call mk_get,$(basename $1)),$(__fc_cflags) $(call mk_fileType_opts,$1))
+fc_all_flags_of      = $(call fc_cflags_of,$(subst \\,/,$1))
 
 __fc_cmd_fpp         = $(fc) $(fc_E) $(call fc_cflags_of,$(notdir $1)) $1
 __fc_cmd_compile     = $(fc) $(fc_c) $(call fc_cflags_of,$(notdir $<)) $< $(fc_o) $@
