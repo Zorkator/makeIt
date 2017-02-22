@@ -39,7 +39,7 @@ define cmd_FC_depends
 	$(eval ___tmp    := $(mk_BUILD_DIR)/.mk.FC_depends)
 	$(if $(___fc_src),\
 		$(call mk_write_file,$(___tmp),$(___fc_src)) \
-		python $(__mk_root)fort_deps.py -a $1 --filelist=$(___tmp) --objdir=$(mk_BUILD_DIR) ;\
+		python $(__mk_root)fort_deps.py -o $1 --append --in=$(___tmp) --objdir=$(mk_BUILD_DIR) --fpp="$(__fc_cmd_fpp) {f}" -j 20 -v ;\
 		rm -f $(___tmp))
 endef
 
@@ -140,7 +140,7 @@ fl_archives  = $(fl_arch_on) $1 $(fl_arch_off)#   < option frame for linking who
 fpp,*_doc = preprocess file to stdout. Directories have to be separated by \\\\, e.g. make fpp,src\\\\main.f90
 fpp,%:
 	$(mk_MAKE) --quiet $(subst \,/,$*)
-	$(call __fc_cmd_fpp,$(subst \,/,$*))
+	$(call __fc_cmd_fpp_of,$(subst \,/,$*))
 
 
 #-- define compiler switches --
@@ -240,11 +240,13 @@ __fc_file_types     := f95 f90 for f
 
 __fc_pp_defines      = $(mk_FC_PP_DEFINES:%=$(fc_D)%)
 __fc_include_dirs    = $(patsubst %,$(fc_I)%,$(filter-out $(mk_FC_MOD_DIR),$(mk_BUILD_DIR) $(mk_FC_INCLUDE_DIRS)))
-__fc_cflags          = $(__fc_include_dirs) $(__fc_pp_defines) $(fc_mod) $(mk_FC_MOD_DIR) $(mk_FC_FLAGS) $(mk_FC_CFLAGS)
+__fc_ppflags         = $(__fc_include_dirs) $(__fc_pp_defines)
+__fc_cflags          = $(__fc_ppflags) $(fc_mod) $(mk_FC_MOD_DIR) $(mk_FC_FLAGS) $(mk_FC_CFLAGS)
 fc_cflags_of         = $(or $(call mk_get,$(basename $1)),$(__fc_cflags) $(call mk_fileType_opts,$1))
 fc_all_flags_of      = $(call fc_cflags_of,$(subst \\,/,$1))
 
-__fc_cmd_fpp         = $(fc) $(fc_E) $(call fc_cflags_of,$(notdir $1)) $1
+__fc_cmd_fpp         = $(fc) $(fc_E) $(__fc_ppflags)
+__fc_cmd_fpp_of      = $(fc) $(fc_E) $(call fc_cflags_of,$(notdir $1)) $1
 __fc_cmd_compile     = $(fc) $(fc_c) $(call fc_cflags_of,$(notdir $<)) $< $(fc_o) $@
 
 __fc_library_dirs    = $(call uniq,$(patsubst %,$(fc_L)%,$(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS)))
