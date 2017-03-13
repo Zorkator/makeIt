@@ -24,7 +24,7 @@ Options:
                                 repeating the option.
 """
 
-from os.path              import splitext as _splitext, split as _splitpath, join as _joinpath
+from os.path              import splitext as _splitext, split as _splitpath, join as _joinpath, abspath as _abspath
 from subprocess           import Popen as _Popen, PIPE as _PIPE
 from multiprocessing.pool import ThreadPool
 import docopt, re, sys, logging
@@ -33,10 +33,12 @@ logging.basicConfig()
 
 class DepsCrawler(object):
 
-  _scanMod   = re.compile( r'^\s*module\s+(\w+)\s*(?:!.*|)$',          re.IGNORECASE ).match
-  _scanInc   = re.compile( r'^#\s*include\s*["\'].*?(\w+)\.fmod["\']', re.IGNORECASE ).match
-  _scanUse   = re.compile( r'^\s*use\s+(\w+)',                         re.IGNORECASE ).match
-  _tryCodecs = ['latin-1', 'utf-8']
+  _scanMod    = re.compile( r'^\s*module\s+(\w+)\s*(?:!.*|)$',          re.IGNORECASE ).match
+  _scanIMod   = re.compile( r'^#\s*include\s*["\'].*?(\w+)\.fmod["\']', re.IGNORECASE ).match
+  _scanUse    = re.compile( r'^\s*use\s+(\w+)',                         re.IGNORECASE ).match
+  _scanIncl   = re.compile( r'^#\s*include\s*["\'](.*)["\']',           re.IGNORECASE ).match
+  _scanInclPP = re.compile( r'^#\s+\d+\s+"(.*)"\s+\d+\s*$',             re.IGNORECASE ).match
+  _tryCodecs  = ['latin-1', 'utf-8']
 
   @staticmethod
   def _getStream( fileName, fpp, codec ):
@@ -70,15 +72,24 @@ class DepsCrawler(object):
   def scanFile( self, fileName ):
     try:
       self._log.info( "scanning " + fileName )
-      uses = self._fileTab.setdefault( fileName, set() )
+      uses = self._fileTab.setdefault( fileName, (set(), set()) )
       for line in self._readFile( fileName ):
+        self._log.debug( line )
         use = self._scanUse( line )
         if use:
-          uses.add( use.groups()[0].lower() )
-        else:
-          mod = self._scanMod( line ) or self._scanInc( line )
-          if mod:
-            self._modTab[ mod.groups()[0].lower() ] = fileName
+          uses[0].add( use.groups()[0].lower() )
+          continue
+
+        inc = self._scanIncl( line ) or self._scanInclPP( line )
+        if inc:
+          uses[1].add( _abspath(inc.groups()[0]) )
+          continue
+
+        mod = self._scanMod( line ) or self._scanIMod( line )
+        if mod:
+          self._modTab[ mod.groups()[0].lower() ] = fileName
+          continue
+
     except IOError as e:
       self._log.error( "{0} skipped: {1}".format( fileName, e ) )
 
@@ -100,8 +111,10 @@ class DepsCrawler(object):
 
   def __iter__( self ):
     for f, uses in self._fileTab.items():
-      modFiles = set( map( self._modTab.get, uses ) ) - set([f])
-      yield self._obj(f) + ': ' + ' '.join( map( self._obj, filter( None, modFiles ) ) )
+      moduleFiles   = set( map( self._modTab.get, uses[0] ) ) - set([f])
+      moduleObjects = map( self._obj, filter( None, moduleFiles ) )
+      includedFiles = list( uses[1] )
+      yield self._obj(f) + ': ' + ' '.join( moduleObjects + includedFiles )
 
 
 
