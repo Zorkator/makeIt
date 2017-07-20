@@ -20,6 +20,7 @@ Options:
                                 the file to preprocess.
   -d DIR, --objdir DIR          replace directory of input files by given string DIR.
   -j JOBS, --jobs JOBS          number of threads for processing files [default: 1].
+  -s --sort                     enable output sorting
   -v                            set verbosity of printed messages. Increase level by
                                 repeating the option.
 """
@@ -62,6 +63,9 @@ class DepsCrawler(object):
       with (fileList == '-' and sys.stdin) or open( fileList ) as listFile:
         fileSet |= set( ' '.join( listFile.readlines() ).split() )
 
+    if kwArgs['--sort']: self._sorted = sorted
+    else               : self._sorted = lambda l: l
+
     self._fpp = kwArgs['--fpp']
     self._fileTab, self._modTab = dict(), dict()
     ThreadPool( processes=int(kwArgs['--jobs']) ).map( self.scanFile, fileSet )
@@ -74,6 +78,7 @@ class DepsCrawler(object):
       self._log.info( "scanning " + fileName )
       uses = self._fileTab.setdefault( fileName, (set(), set()) )
       for line in self._readFile( fileName ):
+        line = line.decode('utf-8')
         self._log.debug( line )
         use = self._scanUse( line )
         if use:
@@ -110,11 +115,11 @@ class DepsCrawler(object):
 
 
   def __iter__( self ):
-    for f, uses in self._fileTab.items():
+    for f, uses in self._sorted( self._fileTab.items() ):
       moduleFiles   = set( map( self._modTab.get, uses[0] ) ) - set([f])
-      moduleObjects = map( self._obj, filter( None, moduleFiles ) )
+      moduleObjects = list( map( self._obj, filter( None, moduleFiles ) ) )
       includedFiles = list( uses[1] )
-      yield self._obj(f) + ': ' + ' '.join( moduleObjects + includedFiles )
+      yield self._obj(f) + ': ' + ' '.join( self._sorted( moduleObjects + includedFiles ) )
 
 
 

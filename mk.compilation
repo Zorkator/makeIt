@@ -231,8 +231,9 @@ SUBPACKAGES_doc       ?= directory list of project prerequisites
 mk_SUBPACKAGES         = $(call mk_get,SUBPACKAGES)
 
 mk_MAKEFLAGS           = $(call uniq,$(foreach o,$(mk_OPT_CLASSES),$o=$(mk_$o)) $(MAKEFLAGS))
-mk_PKG_MAKEFLAGS       = $(call mk_flag_filter,-out,BUILD_MODE OUT_TYPE OUT_NAME OUT_DIR,$(mk_MAKEFLAGS)) OUT_TYPE=shared OUT_DIR=$(abspath $(mk_BUILD_DIR))
+mk_PKG_MAKEFLAGS       = $(call mk_flag_filter,-out,$(___pkg_filtered_flags),$(mk_MAKEFLAGS)) OUT_TYPE=shared OUT_DIR=$(abspath $(mk_BUILD_DIR))
 mk_pkg_reflag          = $(call mk_flag_replace,$(mk_PKG_MAKEFLAGS),$1 $(___pkg_compat.$(mk_BUILD_MODE)))
+___pkg_filtered_flags  = BUILD_MODE OUT_TYPE OUT_NAME OUT_DIR SOURCE_FILES SOURCE_DIRS
 ___pkg_compat.shared  := BUILD_MODE=shared
 
 mk_BINARY_TAG          = $(call mk_get,BINARY_TAG)
