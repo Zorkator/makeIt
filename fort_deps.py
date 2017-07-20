@@ -78,7 +78,7 @@ class DepsCrawler(object):
       self._log.info( "scanning " + fileName )
       uses = self._fileTab.setdefault( fileName, (set(), set()) )
       for line in self._readFile( fileName ):
-        line = line.decode('utf-8')
+        #line = line.decode('utf-8')
         self._log.debug( line )
         use = self._scanUse( line )
         if use:
