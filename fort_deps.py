@@ -39,13 +39,14 @@ class DepsCrawler(object):
   _scanUse    = re.compile( r'^\s*use\s+(\w+)',                         re.IGNORECASE ).match
   _scanIncl   = re.compile( r'^#\s*include\s*["\'](.*)["\']',           re.IGNORECASE ).match
   _scanInclPP = re.compile( r'^#\s+\d+\s+"(.*)"\s+\d+\s*$',             re.IGNORECASE ).match
-  _tryCodecs  = ['latin-1', 'utf-8']
+  _tryCodecs  = ['utf-8', 'latin-1']
 
   @staticmethod
   def _getStream( fileName, fpp, codec ):
     import shlex, codecs
-    if fpp: return _Popen( shlex.split( fpp.format( f=fileName ) ), stdout=_PIPE ).stdout
-    else  : return codecs.open( fileName, 'r', codec )
+    if fpp: binaryStream = _Popen( shlex.split( fpp.format( f=fileName ) ), stdout=_PIPE ).stdout
+    else  : binaryStream = open( fileName, 'rb' )
+    return codecs.getreader(codec)(binaryStream)
 
 
   def __init__( self, **kwArgs ):
@@ -75,10 +76,8 @@ class DepsCrawler(object):
 
   def scanFile( self, fileName ):
     try:
-      self._log.info( "scanning " + fileName )
       uses = self._fileTab.setdefault( fileName, (set(), set()) )
       for line in self._readFile( fileName ):
-        #line = line.decode('utf-8')
         self._log.debug( line )
         use = self._scanUse( line )
         if use:
@@ -103,11 +102,13 @@ class DepsCrawler(object):
     for codec in self._tryCodecs:
       try:
         with self._getStream( fileName, self._fpp, codec ) as stream:
-          return stream.readlines()
+          lines = stream.readlines()
+          self._log.info( "scanning {0} [{1}]".format( fileName, codec ) )
+          return lines
       except UnicodeError:
-        self._log.warning( "failed at decoding {0} by codec {1}".format( fileName, codec ) )
+          pass
     else:
-      raise UnicodeDecodeError( "unable to decode {0}".format( fileName ) )
+      raise UnicodeError( "unable to decode {0}, giving up :-(".format( fileName ) )
 
 
   def _obj( self, fileName ):
