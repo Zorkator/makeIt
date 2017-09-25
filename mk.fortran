@@ -148,7 +148,7 @@ fpp,%:
 __fc_gfortran           := gfortran
 __fc_version_gfortran   := --version
 __fc_c_gfortran         := -c
-__fc_g_gfortran         := -ggdb -Og
+__fc_g_gfortran         := -ggdb -g
 __fc_O0_gfortran        := -O0
 __fc_O1_gfortran        := -O1
 __fc_O2_gfortran        := -O2
