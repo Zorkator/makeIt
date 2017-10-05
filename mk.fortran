@@ -14,7 +14,7 @@ mk_FILE_TYPES    += $(__fc_file_types)
 mk_OUTPUT_DIRS   += $(FC_MOD_DIR)
 mk_CLEARED_FILES += $(mk_BUILD_DIR)/*.o $(mk_BUILD_DIR)/*.mod $(mk_BUILD_DIR)/lib*
 
-__builtin_FCs    := gfortran ifort
+__builtin_FCs    := gfortran ifort mpifort
 __builtin_ARCHs  := 64 32
 
 mk_FC_list        = $(call mk_selective,$(FC_list) $(__builtin_FCs))
@@ -46,8 +46,10 @@ endef
 #-- user parameters --
 
 FC_doc              ?= used fortran compiler: $(call mk_opt_set,FC)
-FC                   = $(firstword $(mk_FC_list))#< override default on most systems: f77
+FC                   = $(firstword $(mk_FC_list))#                          < override default on most systems: f77
+FC_mpifort          := $(shell mpifort -showme:command $(mk_ignoreErrors))# < ask mpifort for compiler to use
 mk_FC                = $(call mk_get,FC)
+mk_FC_auto           = $(or $(FC_$(mk_FC)),$(mk_FC))
 
 FC_PP_DEFINES_doc   ?= list of fortran preprocessor defines
 mk_FC_PP_DEFINES     = $(call mk_get,FC_PP_DEFINES)
@@ -85,54 +87,54 @@ mk_FC_LINK_OTHER     = $(call mk_get,FC_LINK_OTHER)
 
 #-- exposed compiler switches --
 
-fc           = $(__fc_$(mk_FC))#                  < compiler call
-fc_version   = $(__fc_version_$(mk_FC))#          < compiler version string
-fc_c         = $(__fc_c_$(mk_FC))#                < compile only (no linking)
-fc_g         = $(__fc_g_$(mk_FC))#                < compile with debug info
-fc_O0        = $(__fc_O0_$(mk_FC))#               < optimization level O0
-fc_O1        = $(__fc_O1_$(mk_FC))#               < optimization level O1
-fc_O2        = $(__fc_O2_$(mk_FC))#               < optimization level O2
-fc_O3        = $(__fc_O3_$(mk_FC))#               < optimization level O3
-fc_o         = $(__fc_o_$(mk_FC))#                < output file
-fc_m         = $(__fc_m_$(mk_FC))#                < architecture
-fc_omp       = $(__fc_omp_$(mk_FC))#              < enable OpenMP extensions
-fc_save      = $(__fc_save_$(mk_FC))#             < place local variables in static memory
-fc_Wsrc_cut  = $(__fc_Wsrc_cut_$(mk_FC))#         < warn if source lines are truncated
-fc_backtrace = $(__fc_backtrace_$(mk_FC))#        < generate backtrace on serious runtime errorsA
-fc_fpscomp   = $(call __fc_fpscomp_$(mk_FC),$1)#  < runtime compatibility flags ... (ifort-only!)
-#                                                      valid arguments: none, [no]filesfromcmd, [no]general, [no]ioformat,
-#                                                                       all,  [no]libs, [no]ldio_spacing, [no]logicals
-fc_fpmodel   = $(call __fc_fpmodel_$(mk_FC),$1)#  < flags controlling semantics of floating-point calculations (ifort-only!)
-#                                                      valid arguments: precise, fast, strict, source
-fc_fpspeculation = $(call __fc_fpspeculation_$(mk_FC),$1)#  < Tells the compiler the mode in which to speculate on floating-point operations. (ifort-only!)
-#                                                      valid arguments: fast, safe, strict, off (default: fast)
-fc_fpe       = $(call __fc_fpe_$(mk_FC),$1)#      < set fpe-trap mode: $(call fc_fpe,{0,1,3})
-#                                                      0: traps invalid, zero, overflow AND (ifort-only:) flush-to-zero
-#                                                      1: no traps, (ifort-only:) flush-to-zero
-#                                                      3: no traps
-fc_trapuv    = $(__fc_trapuv_$(mk_FC))#           < trap uninitialized variables by initializing them to "unusual" values
-fc_check_all = $(__fc_check_all_$(mk_FC))
-fc_fpp       = $(__fc_fpp_$(mk_FC))#              < enable preprocessor
-fc_fpp77     = $(__fc_fpp77_$(mk_FC))#            < enable preprocessor f77 style
-fc_fpp95     = $(__fc_fpp95_$(mk_FC))#            < enable preprocessor f95 style
-fc_form      = $(call __fc_form_$(mk_FC),$1,$2)#  < set input format: $(call fc_form,{free,fixed},{n,none})
-fc_E         = $(__fc_E_$(mk_FC))#                < preprocess only - implies fc_fpp
-fc_D         = $(__fc_D_$(mk_FC))#                < define preprocessor symbol
-fc_I         = $(__fc_I_$(mk_FC))#                < include directory
-fc_L         = $(__fc_L_$(mk_FC))#                < link directory
-fc_l         = $(__fc_l_$(mk_FC))#                < link library
-fc_mod       = $(__fc_mod_$(mk_FC))#              < directory for module output
-fc_pic       = $(__fc_pic_$(mk_FC))#              < generate position independent code (pic) for shared libraries
-fc_threads   = $(__fc_threads_$(mk_FC))#          < enable threading support
+fc           = $(__fc_$(mk_FC))#                       < compiler call
+fc_version   = $(__fc_version_$(mk_FC_auto))#          < compiler version string
+fc_c         = $(__fc_c_$(mk_FC_auto))#                < compile only (no linking)
+fc_g         = $(__fc_g_$(mk_FC_auto))#                < compile with debug info
+fc_O0        = $(__fc_O0_$(mk_FC_auto))#               < optimization level O0
+fc_O1        = $(__fc_O1_$(mk_FC_auto))#               < optimization level O1
+fc_O2        = $(__fc_O2_$(mk_FC_auto))#               < optimization level O2
+fc_O3        = $(__fc_O3_$(mk_FC_auto))#               < optimization level O3
+fc_o         = $(__fc_o_$(mk_FC_auto))#                < output file
+fc_m         = $(__fc_m_$(mk_FC_auto))#                < architecture
+fc_omp       = $(__fc_omp_$(mk_FC_auto))#              < enable OpenMP extensions
+fc_save      = $(__fc_save_$(mk_FC_auto))#             < place local variables in static memory
+fc_Wsrc_cut  = $(__fc_Wsrc_cut_$(mk_FC_auto))#         < warn if source lines are truncated
+fc_backtrace = $(__fc_backtrace_$(mk_FC_auto))#        < generate backtrace on serious runtime errorsA
+fc_fpscomp   = $(call __fc_fpscomp_$(mk_FC_auto),$1)#  < runtime compatibility flags ... (ifort-only!)
+#                                                        valid arguments: none, [no]filesfromcmd, [no]general, [no]ioformat,
+#                                                                         all,  [no]libs, [no]ldio_spacing, [no]logicals
+fc_fpmodel   = $(call __fc_fpmodel_$(mk_FC_auto),$1)#  < flags controlling semantics of floating-point calculations (ifort-only!)
+#                                                        valid arguments: precise, fast, strict, source
+fc_fpspeculation = $(call __fc_fpspeculation_$(mk_FC_auto),$1)#  < Tells the compiler the mode in which to speculate on floating-point operations. (ifort-only!)
+#                                                                  valid arguments: fast, safe, strict, off (default: fast)
+fc_fpe       = $(call __fc_fpe_$(mk_FC_auto),$1)#      < set fpe-trap mode: $(call fc_fpe,{0,1,3})
+#                                                        0: traps invalid, zero, overflow AND (ifort-only:) flush-to-zero
+#                                                        1: no traps, (ifort-only:) flush-to-zero
+#                                                        3: no traps
+fc_trapuv    = $(__fc_trapuv_$(mk_FC_auto))#           < trap uninitialized variables by initializing them to "unusual" values
+fc_check_all = $(__fc_check_all_$(mk_FC_auto))
+fc_fpp       = $(__fc_fpp_$(mk_FC_auto))#              < enable preprocessor
+fc_fpp77     = $(__fc_fpp77_$(mk_FC_auto))#            < enable preprocessor f77 style
+fc_fpp95     = $(__fc_fpp95_$(mk_FC_auto))#            < enable preprocessor f95 style
+fc_form      = $(call __fc_form_$(mk_FC_auto),$1,$2)#  < set input format: $(call fc_form,{free,fixed},{n,none})
+fc_E         = $(__fc_E_$(mk_FC_auto))#                < preprocess only - implies fc_fpp
+fc_D         = $(__fc_D_$(mk_FC_auto))#                < define preprocessor symbol
+fc_I         = $(__fc_I_$(mk_FC_auto))#                < include directory
+fc_L         = $(__fc_L_$(mk_FC_auto))#                < link directory
+fc_l         = $(__fc_l_$(mk_FC_auto))#                < link library
+fc_mod       = $(__fc_mod_$(mk_FC_auto))#              < directory for module output
+fc_pic       = $(__fc_pic_$(mk_FC_auto))#              < generate position independent code (pic) for shared libraries
+fc_threads   = $(__fc_threads_$(mk_FC_auto))#          < enable threading support
 #
-fl           = $(__fl_$(mk_FC))#                  < linker call
-fl_soname    = $(__fl_soname_$(mk_FC))#           < set soname
-fl_static    = $(__fl_static_$(mk_FC))#           < force static linking
-fl_rpath     = $(__fl_rpath_$(mk_FC))#            < burn library path
-fl_no_undef  = $(__fl_no_undef_$(mk_FC))#         < force error reports for unresolved symbols
-fl_arch_on   = $(__fl_arch_on_$(mk_FC))#          < force linker to include whole archives
-fl_arch_off  = $(__fl_arch_off_$(mk_FC))#         < disable including whole archives
-fl_archives  = $(fl_arch_on) $1 $(fl_arch_off)#   < option frame for linking whole archives
+fl           = $(__fl_$(mk_FC))#                       < linker call
+fl_soname    = $(__fl_soname_$(mk_FC_auto))#           < set soname
+fl_static    = $(__fl_static_$(mk_FC_auto))#           < force static linking
+fl_rpath     = $(__fl_rpath_$(mk_FC_auto))#            < burn library path
+fl_no_undef  = $(__fl_no_undef_$(mk_FC_auto))#         < force error reports for unresolved symbols
+fl_arch_on   = $(__fl_arch_on_$(mk_FC_auto))#          < force linker to include whole archives
+fl_arch_off  = $(__fl_arch_off_$(mk_FC_auto))#         < disable including whole archives
+fl_archives  = $(fl_arch_on) $1 $(fl_arch_off)#        < option frame for linking whole archives
 
 
 #-- targets --
@@ -143,8 +145,13 @@ fpp,%:
 	$(call __fc_cmd_fpp_of,$(subst \,/,$*))
 
 
-#-- define compiler switches --
+#-- define compiler specifics --
 
+# MPI compiler driver
+__fc_mpifort            := mpifort
+__fl_mpifort            := mpifort
+
+# GNU Fortran compiler
 __fc_gfortran           := gfortran
 __fc_version_gfortran   := --version
 __fc_c_gfortran         := -c
@@ -189,6 +196,7 @@ __fl_no_undef_gfortran  := -Wl,--no-undefined
 __fl_arch_on_gfortran   := -Wl,--whole-archive
 __fl_arch_off_gfortran  := -Wl,--no-whole-archive
 
+# Intel Fortran compiler
 __fc_ifort              := ifort
 __fc_version_ifort      := -V
 __fc_c_ifort            := -c
