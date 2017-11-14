@@ -18,6 +18,7 @@ SRC_CACHE_          = # empty by default
 mk_DEPS             = $(mk_BUILD_DIR)/.mk.deps
 mk_DEPS_info        = $(notdir $(mk_pwd))  [$1] @ $(mk_now)
 mk_SRC_CACHE        = $(mk_BUILD_DIR)/.mk.sourcelist
+mk_V_SCRIPT         = $(mk_BUILD_DIR)/.mk.version.script
 
 __builtin_OUT_TYPEs = exe shared static
 mk_OUT_TYPE_list    = $(call mk_selective,$(OUT_TYPE_list) $(__builtin_OUT_TYPEs))
@@ -80,6 +81,11 @@ define ___source_files_of
 	$(call mk_grep,/$(basename $1).,$2)
 endef
 
+# $(call ___exports_of,REGEX_EXPORT,SOURCE_FILES)
+define ___exports_of
+	$(call mk_file_grep,$(word 1,$1),$(word 2,$1),$2)
+endef
+
 # $(call mk_packages,BUILD_TARGET)
 # NOTE: mk_submake uses calls MAKE (instead of mk_MAKE), since we can NOT force the same makefile for subpackages.
 define mk_packages
@@ -112,6 +118,18 @@ define mk_find_archives
 	$(eval ___find_pattern := $(subst ' -,' -or -,$(foreach l,$2,-wholename '*/lib$l*.a')))
 	$(if $(and $1,$2), \
 		$(shell find $1 \( $(___find_pattern) \) -and -not \( -path '*/.*' -or -type d \) -print))
+endef
+
+# $(mk_create_version_script)
+define mk_create_version_script
+	$(eval ___script  := $(mk_V_SCRIPT))
+	$(eval ___libid   := $(firstword $(call mk_split,.,$(mk_OUT_FILE_NAME))))
+	$(eval ___exports := $(mk_EXPORTS))
+	$(call mk_write_file,$(___script),$(___libid),"%s\n{\nglobal:\n")
+	$(if $(and $(___exports),$(call sne,$(___exports),*)),                \
+		$(call mk_write_file,$(___script),$(___exports),"  %s_;\n",append), \
+		$(call mk_write_file,$(___script),,"  *;\n",append))
+	$(call mk_write_file,$(___script),local,"%s:\n  *;\n};\n",append)
 endef
 
 # $(mk_create_archive,ARCHIVE,OBJECTS,LIB_DIRS,LIB_NAMES)
@@ -224,6 +242,10 @@ mk_OBJECTS             = $(patsubst %,$(mk_BUILD_DIR)/%.o,$(notdir $(basename $(
 OBJECT_ARCHIVE        ?= $(mk_BUILD_DIR)/.mk.objects.a
 OBJECT_ARCHIVE.static  = $(mk_OUT_FILE)
 mk_OBJECT_ARCHIVE      = $(or $(OBJECT_ARCHIVE.$(mk_OUT_TYPE)),$(OBJECT_ARCHIVE))
+
+EXPORTS_doc           ?= list of exported symbols
+EXPORTS_default        = $(call ___exports_of,$(regex_export),$(mk_SOURCE_FILES))
+mk_EXPORTS             = $(call mk_get,EXPORTS)
 
 mk_CLEARED_FILES      += $(CLEARED_FILES) $(mk_VARIANT_SOURCE) $(mk_LOG_FILE) $(mk_DEPS) $(mk_SRC_CACHE)
 

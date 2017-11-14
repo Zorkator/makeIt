@@ -22,6 +22,8 @@ mk_FC_list        = $(call mk_selective,$(FC_list) $(__builtin_FCs))
 mk_ARCH_list      = $(call mk_selective,$(ARCH_list) $(__builtin_ARCHs))
 cmd_FC_version    = $(shell $(fc) $(fc_version) 2>&1 | sed -ne 's/\([0-9]\+\.[0-9.]\+\)/\1/p')
 cmd_depends      += cmd_FC_depends
+regex_export     ?= ^\s*[cC!]_PROC_EXPORT(\(\w*\)) \L\1
+#                  search regex ---^                ^--- replace pattern: symbol as lowercase!
 
 # $(cmd_LINK,OUT_FILE,OBJECTS)
 define cmd_LINK
@@ -137,6 +139,8 @@ fl_no_undef  = $(__fl_no_undef_$(mk_FC_auto))#         < force error reports for
 fl_arch_on   = $(__fl_arch_on_$(mk_FC_auto))#          < force linker to include whole archives
 fl_arch_off  = $(__fl_arch_off_$(mk_FC_auto))#         < disable including whole archives
 fl_archives  = $(fl_arch_on) $1 $(fl_arch_off)#        < option frame for linking whole archives
+fl_v_script  = $(__fl_v_script_$(mk_FC))#         < version script
+fl_exports   = $(if $(mk_EXPORTS),$(fl_v_script)$(mk_V_SCRIPT),)
 
 
 #-- targets --
@@ -198,6 +202,7 @@ __fl_rpath_gfortran     := -Wl,-rpath,
 __fl_no_undef_gfortran  := -Wl,--no-undefined
 __fl_arch_on_gfortran   := -Wl,--whole-archive
 __fl_arch_off_gfortran  := -Wl,--no-whole-archive
+__fl_v_script_gfortran  := -Wl,--version-script=
 
 # Intel Fortran compiler
 __fc_ifort              := ifort
@@ -245,6 +250,7 @@ __fl_rpath_ifort        := -Wl,-rpath=
 __fl_no_undef_ifort     := -Wl,--no-undefined
 __fl_arch_on_ifort      := -Wl,--whole-archive
 __fl_arch_off_ifort     := -Wl,--no-whole-archive
+__fl_v_script_ifort     := -Wl,--version-script=
 
 #-- derive private flaglists --
 
@@ -278,6 +284,7 @@ define fc_cmd_link.exe
 endef
 
 define fc_cmd_link.shared
+	$(call mk_create_version_script)
 	$(call mk_create_archive,$(__fc_object_archive),$2)
 	$(call mk_logged_cmd,$(fl) $(fc_o) $1 $(__fc_lflags) $(call fl_archives,$(__fc_object_archive)) $(__fc_libraries) $(mk_FC_LINK_OTHER))
 	$(call mk_symlink_so,$1)

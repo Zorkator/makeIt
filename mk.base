@@ -14,7 +14,7 @@ __cmd_max_args := 512
 mk_PARAMETERS    += 
 mk_HIDE_PARAMS   += 
 mk_CFG_list      +=
-mk_TARGET_list   += dist-* help echo,* eval,* value,*
+mk_TARGET_list   += dist-* help vartab,* echo,* eval,* value,*
 
 mk_NULL          :=
 mk_SPACE         := $(mk_NULL) #
@@ -22,7 +22,7 @@ mk_COMMA         := ,
 mk_DOLLAR        := $$
 mk_ANY           := %
 mk_MAKE           = $(MAKE) -f $(firstword $(MAKEFILE_LIST))
-mk_PROJECT_DIR    = $(dir $(firstword $(MAKEFILE_LIST)))
+mk_PROJECT_DIR    = $(abspath $(dir $(firstword $(MAKEFILE_LIST))))
 
 mk_ignoreErrors  := 2> /dev/null || :
 mk_echo          := /bin/echo -e
@@ -38,11 +38,13 @@ mk_warning        = $1\n$(warning $1)
 mk_count          = $(words $(filter $1,$2))
 mk_substring      = $(if $(findstring $1,$2),$2,)
 mk_grep           = $(strip $(foreach x,$2,$(call mk_substring,$1,$x)))
+mk_file_grep      = $(shell grep $3 -he '$1' | sed -e 's/$1/$2/')#<                                mk_file_grep( match_regex, match_out, files )
 mk_lower          = $(shell echo $(1) | tr A-Z a-z)#<                                              mk_lower( sTriNg )                 : string
 mk_upper          = $(shell echo $(1) | tr a-z A-Z)#<                                              mk_upper( sTriNg )                 : STRING
 mk_csv            = $(subst $(mk_SPACE),$(mk_COMMA),$(strip $1))#<                                 mk_csv( v1 v2 ... )                : v1,v2,...
 mk_lsv            = $(subst $(mk_SPACE),\\n,$(strip $1))#<                                         mk_lsv( v1 v2 ... )                : 'v1\nv2\n...'
 mk_join           = $(subst $(mk_SPACE),$1,$(strip $2))#<                                          mk_join( S, v1 v2 ... )            : 'v1Sv2S...'
+mk_split          = $(subst $1,$(mk_SPACE),$2)#<                                                   mk_split( ., file.txt )            : file txt
 mk_ssv            = $(subst $(mk_COMMA),$(mk_SPACE),$(strip $1))#<                                 mk_ssv( 'v1,v2,...' )              : 'v1 v2 ...'
 mk_reverse        = $(if $1,$(call mk_reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))#<     mk_reverse( v1 v2 ... )            : ... v2 v1
 mk_defined        = $(patsubst undefined,,$(origin $1))#<                                          mk_defined( varId )                : origin(varId) | ''
@@ -137,6 +139,11 @@ help:
               '$(__tgt_tab)               \n' \
               '== CURRENT PARAMETERS ==   \n' \
               '$(__var_tab)'
+
+
+vartab,*_doc = print overview over known variables with given prefix, e.g. make vartab,mk_
+vartab,%:
+	@$(foreach v, $(sort $(filter $*,$(.VARIABLES))), $(info $(v) = $($(v))))
 
 
 help,*_doc = echo value of make variable and specify its origin, e.g. make origin.CFG
