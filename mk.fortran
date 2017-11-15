@@ -139,7 +139,7 @@ fl_no_undef  = $(__fl_no_undef_$(mk_FC_auto))#         < force error reports for
 fl_arch_on   = $(__fl_arch_on_$(mk_FC_auto))#          < force linker to include whole archives
 fl_arch_off  = $(__fl_arch_off_$(mk_FC_auto))#         < disable including whole archives
 fl_archives  = $(fl_arch_on) $1 $(fl_arch_off)#        < option frame for linking whole archives
-fl_v_script  = $(__fl_v_script_$(mk_FC))#         < version script
+fl_v_script  = $(__fl_v_script_$(mk_FC_auto))#         < version script
 fl_exports   = $(if $(mk_EXPORTS),$(fl_v_script)$(mk_V_SCRIPT),)
 
 
