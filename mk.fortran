@@ -90,22 +90,23 @@ mk_FC_LINK_OTHER     = $(call mk_get,FC_LINK_OTHER)
 
 #-- exposed compiler switches --
 
-fc           = $(__fc_$(mk_FC_cmd))#              < compiler call
-fc_version   = $(__fc_version_$(mk_FC))#          < compiler version string
-fc_c         = $(__fc_c_$(mk_FC))#                < compile only (no linking)
-fc_g         = $(__fc_g_$(mk_FC))#                < compile with debug info
-fc_O0        = $(__fc_O0_$(mk_FC))#               < optimization level O0
-fc_O1        = $(__fc_O1_$(mk_FC))#               < optimization level O1
-fc_O2        = $(__fc_O2_$(mk_FC))#               < optimization level O2
-fc_O3        = $(__fc_O3_$(mk_FC))#               < optimization level O3
-fc_o         = $(__fc_o_$(mk_FC))#                < output file
-fc_m         = $(__fc_m_$(mk_FC))#                < architecture
-fc_omp       = $(__fc_omp_$(mk_FC))#              < enable OpenMP extensions
-fc_save      = $(__fc_save_$(mk_FC))#             < place local variables in static memory
-fc_Wsrc_cut  = $(__fc_Wsrc_cut_$(mk_FC))#         < warn if source lines are truncated
-fc_Wimplicit = $(__fc_Wimplicit_$(mk_FC))#        < warn/raise error on implicit declarations
-fc_backtrace = $(__fc_backtrace_$(mk_FC))#        < generate backtrace on serious runtime errorsA
-fc_fpscomp   = $(call __fc_fpscomp_$(mk_FC),$1)#  < runtime compatibility flags ... (ifort-only!)
+fc             = $(__fc_$(mk_FC_cmd))#              < compiler call
+fc_version     = $(__fc_version_$(mk_FC))#          < compiler version string
+fc_c           = $(__fc_c_$(mk_FC))#                < compile only (no linking)
+fc_g           = $(__fc_g_$(mk_FC))#                < compile with debug info
+fc_O0          = $(__fc_O0_$(mk_FC))#               < optimization level O0
+fc_O1          = $(__fc_O1_$(mk_FC))#               < optimization level O1
+fc_O2          = $(__fc_O2_$(mk_FC))#               < optimization level O2
+fc_O3          = $(__fc_O3_$(mk_FC))#               < optimization level O3
+fc_o           = $(__fc_o_$(mk_FC))#                < output file
+fc_m           = $(__fc_m_$(mk_FC))#                < architecture
+fc_omp         = $(__fc_omp_$(mk_FC))#              < enable OpenMP extensions
+fc_save        = $(__fc_save_$(mk_FC))#             < place local variables in static memory
+fc_Wsrc_cut    = $(__fc_Wsrc_cut_$(mk_FC))#         < warn if source lines are truncated
+fc_Wimplicit   = $(__fc_Wimplicit_$(mk_FC))#        < warn/raise error on implicit declarations
+fc_Winterfaces = $(__fc_Winterfaces_$(mk_FC))#      < warn/raise error on interfaces mismatch
+fc_backtrace   = $(__fc_backtrace_$(mk_FC))#        < generate backtrace on serious runtime errorsA
+fc_fpscomp     = $(call __fc_fpscomp_$(mk_FC),$1)#  < runtime compatibility flags ... (ifort-only!)
 #                                                        valid arguments: none, [no]filesfromcmd, [no]general, [no]ioformat,
 #                                                                         all,  [no]libs, [no]ldio_spacing, [no]logicals
 fc_fpmodel   = $(call __fc_fpmodel_$(mk_FC),$1)#  < flags controlling semantics of floating-point calculations (ifort-only!)
@@ -172,6 +173,7 @@ __fc_omp_gfortran       := -fopenmp
 __fc_save_gfortran      := -fno-automatic
 __fc_Wsrc_cut_gfortran  := -Wline-truncation
 __fc_Wimplicit_gfortran := -fimplicit-none
+__fc_Winterfaces_gfortran :=
 __fc_backtrace_gfortran := -fbacktrace
 __fc_fpscomp_gfortran   :=
 __fc_fpmodel_gfortran   :=
@@ -219,6 +221,7 @@ __fc_omp_ifort          := -qopenmp
 __fc_save_ifort         := -save
 __fc_Wsrc_cut_ifort     := -warn truncated_source
 __fc_Wimplicit_ifort    := -warn declarations
+__fc_Winterfaces_ifort  := -warn interfaces
 __fc_backtrace_ifort    := -traceback
 __fc_fpscomp_ifort       = -fpscomp $(call mk_csv,$1)
 __fc_fpmodel_ifort       = -fp-model $1

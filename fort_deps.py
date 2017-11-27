@@ -37,7 +37,7 @@ class DepsCrawler(object):
   _scanMod       = re.compile( r'^\s*module\s+(\w+)\s*(?:!.*|)$',          re.IGNORECASE ).match
   _scanIMod      = re.compile( r'^#\s*include\s*["\'].*?(\w+)\.fmod["\']', re.IGNORECASE ).match
   _scanUse       = re.compile( r'^\s*use\s+(\w+)',                         re.IGNORECASE ).match
-  _scanSubModule = re.compile( r'^\s*submodule\s+\((\w+)\)\s+',            re.IGNORECASE ).match
+  _scanSubModule = re.compile( r'^\s*submodule\s*\(\s*(\w+)\s*\)\s+',      re.IGNORECASE ).match
   _scanIncl      = re.compile( r'^#\s*include\s*["\'](.*)["\']',           re.IGNORECASE ).match
   _scanInclPP    = re.compile( r'^#\s+\d+\s+"(.*)"\s+\d+\s*$',             re.IGNORECASE ).match
   _tryCodecs     = ['utf-8', 'latin-1']
