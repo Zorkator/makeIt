@@ -109,39 +109,40 @@ fc_backtrace   = $(__fc_backtrace_$(mk_FC))#        < generate backtrace on seri
 fc_fpscomp     = $(call __fc_fpscomp_$(mk_FC),$1)#  < runtime compatibility flags ... (ifort-only!)
 #                                                        valid arguments: none, [no]filesfromcmd, [no]general, [no]ioformat,
 #                                                                         all,  [no]libs, [no]ldio_spacing, [no]logicals
-fc_fpmodel   = $(call __fc_fpmodel_$(mk_FC),$1)#  < flags controlling semantics of floating-point calculations (ifort-only!)
+fc_fpmodel     = $(call __fc_fpmodel_$(mk_FC),$1)#  < flags controlling semantics of floating-point calculations (ifort-only!)
 #                                                        valid arguments: precise, fast, strict, source
 fc_fpspeculation = $(call __fc_fpspeculation_$(mk_FC),$1)#  < Tells the compiler the mode in which to speculate on floating-point operations. (ifort-only!)
 #                                                                  valid arguments: fast, safe, strict, off (default: fast)
-fc_fpe       = $(call __fc_fpe_$(mk_FC),$1)#      < set fpe-trap mode: $(call fc_fpe,{0,1,3})
+fc_fpe         = $(call __fc_fpe_$(mk_FC),$1)#      < set fpe-trap mode: $(call fc_fpe,{0,1,3})
 #                                                        0: traps invalid, zero, overflow AND (ifort-only:) flush-to-zero
 #                                                        1: no traps, (ifort-only:) flush-to-zero
 #                                                        3: no traps
-fc_trapuv    = $(__fc_trapuv_$(mk_FC))#           < trap uninitialized variables by initializing them to "unusual" values
-fc_check_all = $(__fc_check_all_$(mk_FC))
-fc_fpp       = $(__fc_fpp_$(mk_FC))#              < enable preprocessor
-fc_fpp77     = $(__fc_fpp77_$(mk_FC))#            < enable preprocessor f77 style
-fc_fpp95     = $(__fc_fpp95_$(mk_FC))#            < enable preprocessor f95 style
-fc_form      = $(call __fc_form_$(mk_FC),$1,$2)#  < set input format: $(call fc_form,{free,fixed},{n,none})
-fc_E         = $(__fc_E_$(mk_FC))#                < preprocess only - implies fc_fpp
-fc_D         = $(__fc_D_$(mk_FC))#                < define preprocessor symbol
-fc_I         = $(__fc_I_$(mk_FC))#                < include directory
-fc_L         = $(__fc_L_$(mk_FC))#                < link directory
-fc_l         = $(__fc_l_$(mk_FC))#                < link library
-fc_mod       = $(__fc_mod_$(mk_FC))#              < directory for module output
-fc_pic       = $(__fc_pic_$(mk_FC))#              < generate position independent code (pic) for shared libraries
-fc_threads   = $(__fc_threads_$(mk_FC))#          < enable threading support
+fc_trapuv      = $(__fc_trapuv_$(mk_FC))#           < trap uninitialized variables by initializing them to "unusual" values
+fc_check_all   = $(__fc_check_all_$(mk_FC))
+fc_realloc_lhs = $(__fc_realloc_lhs_$(mk_FC))
+fc_fpp         = $(__fc_fpp_$(mk_FC))#              < enable preprocessor
+fc_fpp77       = $(__fc_fpp77_$(mk_FC))#            < enable preprocessor f77 style
+fc_fpp95       = $(__fc_fpp95_$(mk_FC))#            < enable preprocessor f95 style
+fc_form        = $(call __fc_form_$(mk_FC),$1,$2)#  < set input format: $(call fc_form,{free,fixed},{n,none})
+fc_E           = $(__fc_E_$(mk_FC))#                < preprocess only - implies fc_fpp
+fc_D           = $(__fc_D_$(mk_FC))#                < define preprocessor symbol
+fc_I           = $(__fc_I_$(mk_FC))#                < include directory
+fc_L           = $(__fc_L_$(mk_FC))#                < link directory
+fc_l           = $(__fc_l_$(mk_FC))#                < link library
+fc_mod         = $(__fc_mod_$(mk_FC))#              < directory for module output
+fc_pic         = $(__fc_pic_$(mk_FC))#              < generate position independent code (pic) for shared libraries
+fc_threads     = $(__fc_threads_$(mk_FC))#          < enable threading support
 #
-fl           = $(__fl_$(mk_FC_cmd))#              < linker call
-fl_soname    = $(__fl_soname_$(mk_FC))#           < set soname
-fl_static    = $(__fl_static_$(mk_FC))#           < force static linking
-fl_rpath     = $(__fl_rpath_$(mk_FC))#            < burn library path
-fl_no_undef  = $(__fl_no_undef_$(mk_FC))#         < force error reports for unresolved symbols
-fl_arch_on   = $(__fl_arch_on_$(mk_FC))#          < force linker to include whole archives
-fl_arch_off  = $(__fl_arch_off_$(mk_FC))#         < disable including whole archives
-fl_archives  = $(fl_arch_on) $1 $(fl_arch_off)#   < option frame for linking whole archives
-fl_v_script  = $(__fl_v_script_$(mk_FC))#         < version script
-fl_exports   = $(if $(mk_EXPORTS),$(fl_v_script)$(mk_V_SCRIPT),)
+fl             = $(__fl_$(mk_FC_cmd))#              < linker call
+fl_soname      = $(__fl_soname_$(mk_FC))#           < set soname
+fl_static      = $(__fl_static_$(mk_FC))#           < force static linking
+fl_rpath       = $(__fl_rpath_$(mk_FC))#            < burn library path
+fl_no_undef    = $(__fl_no_undef_$(mk_FC))#         < force error reports for unresolved symbols
+fl_arch_on     = $(__fl_arch_on_$(mk_FC))#          < force linker to include whole archives
+fl_arch_off    = $(__fl_arch_off_$(mk_FC))#         < disable including whole archives
+fl_archives    = $(fl_arch_on) $1 $(fl_arch_off)#   < option frame for linking whole archives
+fl_v_script    = $(__fl_v_script_$(mk_FC))#         < version script
+fl_exports     = $(if $(mk_EXPORTS),$(fl_v_script)$(mk_V_SCRIPT),)
 
 
 #-- targets --
@@ -155,105 +156,107 @@ fpp,%:
 #-- define compiler specifics --
 
 # MPI compiler driver
-__fc_mpifort            := mpifort
-__fl_mpifort            := mpifort
+__fc_mpifort                := mpifort
+__fl_mpifort                := mpifort
 
 # GNU Fortran compiler
-__fc_gfortran           := gfortran
-__fc_version_gfortran   := --version
-__fc_c_gfortran         := -c
-__fc_g_gfortran         := -ggdb -g
-__fc_O0_gfortran        := -O0
-__fc_O1_gfortran        := -O1
-__fc_O2_gfortran        := -O2
-__fc_O3_gfortran        := -O3
-__fc_o_gfortran         := -o
-__fc_m_gfortran         := -m
-__fc_omp_gfortran       := -fopenmp
-__fc_save_gfortran      := -fno-automatic
-__fc_Wsrc_cut_gfortran  := -Wline-truncation
-__fc_Wimplicit_gfortran := -fimplicit-none
-__fc_Winterfaces_gfortran :=
-__fc_backtrace_gfortran := -fbacktrace
-__fc_fpscomp_gfortran   :=
-__fc_fpmodel_gfortran   :=
+__fc_gfortran               := gfortran
+__fc_version_gfortran       := --version
+__fc_c_gfortran             := -c
+__fc_g_gfortran             := -ggdb -g
+__fc_O0_gfortran            := -O0
+__fc_O1_gfortran            := -O1
+__fc_O2_gfortran            := -O2
+__fc_O3_gfortran            := -O3
+__fc_o_gfortran             := -o
+__fc_m_gfortran             := -m
+__fc_omp_gfortran           := -fopenmp
+__fc_save_gfortran          := -fno-automatic
+__fc_Wsrc_cut_gfortran      := -Wline-truncation
+__fc_Wimplicit_gfortran     := -fimplicit-none
+__fc_Winterfaces_gfortran   :=
+__fc_backtrace_gfortran     := -fbacktrace
+__fc_fpscomp_gfortran       :=
+__fc_fpmodel_gfortran       :=
 __fc_fpspeculation_gfortran :=
-__fc_fpe_0_gfortran     := -ffpe-trap=invalid,zero,overflow
-__fc_fpe_1_gfortran     :=
-__fc_fpe_3_gfortran     :=
-__fc_fpe_gfortran        = $(__fc_fpe_$1_gfortran)
-__fc_trapuv_gfortran    := -finit-real=snan -finit-integer=-1 -finit-character=0 -finit-logical=false
-__fc_check_all_gfortran := -fcheck=pointer,bounds
-__fc_fpp_gfortran       := -cpp
-__fc_fpp77_gfortran     := -x f77-cpp-input
-__fc_fpp95_gfortran     := -x f95-cpp-input
-__fc_form_gfortran       = -f$1-line-length-$2
-__fc_E_gfortran         := -E $(__fc_fpp_gfortran)
-__fc_D_gfortran         := -D
-__fc_I_gfortran         := -I
-__fc_L_gfortran         := -L
-__fc_l_gfortran         := -l
-__fc_mod_gfortran       := -J
-__fc_pic_gfortran       := -shared -fPIC
-__fc_threads_gfortran   := -pthread
+__fc_fpe_0_gfortran         := -ffpe-trap=invalid,zero,overflow
+__fc_fpe_1_gfortran         :=
+__fc_fpe_3_gfortran         :=
+__fc_fpe_gfortran            = $(__fc_fpe_$1_gfortran)
+__fc_trapuv_gfortran        := -finit-real=snan -finit-integer=-1 -finit-character=0 -finit-logical=false
+__fc_check_all_gfortran     := -fcheck=pointer,bounds
+__fc_realloc_lhs_gfortran   :=
+__fc_fpp_gfortran           := -cpp
+__fc_fpp77_gfortran         := -x f77-cpp-input
+__fc_fpp95_gfortran         := -x f95-cpp-input
+__fc_form_gfortran           = -f$1-line-length-$2
+__fc_E_gfortran             := -E $(__fc_fpp_gfortran)
+__fc_D_gfortran             := -D
+__fc_I_gfortran             := -I
+__fc_L_gfortran             := -L
+__fc_l_gfortran             := -l
+__fc_mod_gfortran           := -J
+__fc_pic_gfortran           := -shared -fPIC
+__fc_threads_gfortran       := -pthread
 #
-__fl_gfortran           := gfortran
-__fl_soname_gfortran    := -Wl,-soname,
-__fl_static_gfortran    := -Wl,-static
-__fl_rpath_gfortran     := -Wl,-rpath,
-__fl_no_undef_gfortran  := -Wl,--no-undefined
-__fl_arch_on_gfortran   := -Wl,--whole-archive
-__fl_arch_off_gfortran  := -Wl,--no-whole-archive
-__fl_v_script_gfortran  := -Wl,--version-script=
+__fl_gfortran               := gfortran
+__fl_soname_gfortran        := -Wl,-soname,
+__fl_static_gfortran        := -Wl,-static
+__fl_rpath_gfortran         := -Wl,-rpath,
+__fl_no_undef_gfortran      := -Wl,--no-undefined
+__fl_arch_on_gfortran       := -Wl,--whole-archive
+__fl_arch_off_gfortran      := -Wl,--no-whole-archive
+__fl_v_script_gfortran      := -Wl,--version-script=
 
 # Intel Fortran compiler
-__fc_ifort              := ifort
-__fc_version_ifort      := -V
-__fc_c_ifort            := -c
-__fc_g_ifort            := -g
-__fc_O0_ifort           := -O0
-__fc_O1_ifort           := -O1
-__fc_O2_ifort           := -O2
-__fc_O3_ifort           := -O3
-__fc_o_ifort            := -o
-__fc_m_ifort            := -m
-__fc_omp_ifort          := -qopenmp
-__fc_save_ifort         := -save
-__fc_Wsrc_cut_ifort     := -warn truncated_source
-__fc_Wimplicit_ifort    := -warn declarations
-__fc_Winterfaces_ifort  := -warn interfaces
-__fc_backtrace_ifort    := -traceback
-__fc_fpscomp_ifort       = -fpscomp $(call mk_csv,$1)
-__fc_fpmodel_ifort       = -fp-model $1
-__fc_fpspeculation_ifort = -fp-speculation $1
-__fc_fpe_ifort           = -fpe$1 #< CAUTION: -fpe-all=0 sounds more sensible here - BUT leads to nasty FP-Exceptions!
-__fc_trapuv_ifort       := -ftrapuv
-__fc_check_all_ifort    := -check pointer,bounds,uninit,format,output_conversion
-__fc_fpp_ifort          := -fpp -allow nofpp-comments
-__fc_fpp77_ifort        := $(__fc_fpp_ifort)
-__fc_fpp95_ifort        := $(__fc_fpp_ifort)
-__fc_form_ifort_fixed   := -fixed
-__fc_form_ifort_free    := -nofixed
-__fc_form_ifort_none    := -noextend-source
-__fc_form_ifort_0       := -noextend-source
-__fc_form_ifort          = $(__fc_form_ifort_$1) $(or $(__fc_form_ifort_$2),-extend-source $2)
-__fc_E_ifort            := -E $(__fc_fpp_ifort)
-__fc_D_ifort            := -D
-__fc_I_ifort            := -I
-__fc_L_ifort            := -L
-__fc_l_ifort            := -l
-__fc_mod_ifort          := -module
-__fc_pic_ifort          := -shared -fPIC
-__fc_threads_ifort      := -threads
+__fc_ifort                  := ifort
+__fc_version_ifort          := -V
+__fc_c_ifort                := -c
+__fc_g_ifort                := -g
+__fc_O0_ifort               := -O0
+__fc_O1_ifort               := -O1
+__fc_O2_ifort               := -O2
+__fc_O3_ifort               := -O3
+__fc_o_ifort                := -o
+__fc_m_ifort                := -m
+__fc_omp_ifort              := -qopenmp
+__fc_save_ifort             := -save
+__fc_Wsrc_cut_ifort         := -warn truncated_source
+__fc_Wimplicit_ifort        := -warn declarations
+__fc_Winterfaces_ifort      := -warn interfaces
+__fc_backtrace_ifort        := -traceback
+__fc_fpscomp_ifort           = -fpscomp $(call mk_csv,$1)
+__fc_fpmodel_ifort           = -fp-model $1
+__fc_fpspeculation_ifort     = -fp-speculation $1
+__fc_fpe_ifort               = -fpe$1 #< CAUTION: -fpe-all=0 sounds more sensible here - BUT leads to nasty FP-Exceptions!
+__fc_trapuv_ifort           := -ftrapuv
+__fc_check_all_ifort        := -check pointer,bounds,uninit,format,output_conversion
+__fc_realloc_lhs_ifort      := -assume realloc_lhs
+__fc_fpp_ifort              := -fpp -allow nofpp-comments
+__fc_fpp77_ifort            := $(__fc_fpp_ifort)
+__fc_fpp95_ifort            := $(__fc_fpp_ifort)
+__fc_form_ifort_fixed       := -fixed
+__fc_form_ifort_free        := -nofixed
+__fc_form_ifort_none        := -noextend-source
+__fc_form_ifort_0           := -noextend-source
+__fc_form_ifort              = $(__fc_form_ifort_$1) $(or $(__fc_form_ifort_$2),-extend-source $2)
+__fc_E_ifort                := -E $(__fc_fpp_ifort)
+__fc_D_ifort                := -D
+__fc_I_ifort                := -I
+__fc_L_ifort                := -L
+__fc_l_ifort                := -l
+__fc_mod_ifort              := -module
+__fc_pic_ifort              := -shared -fPIC
+__fc_threads_ifort          := -threads
 #
-__fl_ifort              := ifort
-__fl_soname_ifort       := -Wl,-soname=
-__fl_static_ifort       := -Wl,-Bstatic
-__fl_rpath_ifort        := -Wl,-rpath=
-__fl_no_undef_ifort     := -Wl,--no-undefined
-__fl_arch_on_ifort      := -Wl,--whole-archive
-__fl_arch_off_ifort     := -Wl,--no-whole-archive
-__fl_v_script_ifort     := -Wl,--version-script=
+__fl_ifort                  := ifort
+__fl_soname_ifort           := -Wl,-soname=
+__fl_static_ifort           := -Wl,-Bstatic
+__fl_rpath_ifort            := -Wl,-rpath=
+__fl_no_undef_ifort         := -Wl,--no-undefined
+__fl_arch_on_ifort          := -Wl,--whole-archive
+__fl_arch_off_ifort         := -Wl,--no-whole-archive
+__fl_v_script_ifort         := -Wl,--version-script=
 
 #-- derive private flaglists --
 
@@ -266,8 +269,8 @@ __fc_cflags          = $(__fc_ppflags) $(fc_mod) $(mk_FC_MOD_DIR) $(mk_FC_FLAGS)
 fc_cflags_of         = $(or $(call mk_get,$(basename $1)),$(__fc_cflags) $(call mk_fileType_opts,$1))
 fc_all_flags_of      = $(call fc_cflags_of,$(subst \\,/,$1))
 
-__fc_cmd_fpp         = $(fc) $(fc_E) $(__fc_ppflags)
-__fc_cmd_fpp_of      = $(fc) $(fc_E) $(call fc_cflags_of,$(notdir $1)) $1
+__fc_cmd_fpp         = $(mk_FC) $(fc_E) $(__fc_ppflags)
+__fc_cmd_fpp_of      = $(mk_FC) $(fc_E) $(call fc_cflags_of,$(notdir $1)) $1
 __fc_cmd_compile     = $(fc) $(fc_c) $(call fc_cflags_of,$(notdir $<)) $< $(fc_o) $@
 
 __fc_library_dirs    = $(call uniq,$(patsubst %,$(fc_L)%,$(mk_BUILD_DIR) $(mk_FC_LIBRARY_DIRS)))
