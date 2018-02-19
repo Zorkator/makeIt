@@ -15,7 +15,8 @@ mk_OUTPUT_DIRS   += $(FC_MOD_DIR)
 mk_CLEARED_FILES += $(mk_BUILD_DIR)/*.o $(mk_BUILD_DIR)/*.mod $(mk_BUILD_DIR)/lib*
 
 __mpifort_FC     := $(shell mpifort -showme:command $(mk_ignoreErrors))# < check if mpifort is available
-__builtin_FCs    := gfortran ifort $(if $(__mpifort_FC),mpifort,)
+__FCs            := gfortran ifort $(if $(__mpifort_FC),mpifort,)
+__builtin_FCs    := $(foreach c,$(__FCs),$(if $(shell which $c $(mk_ignoreErrors)),$c,-$c))
 __builtin_ARCHs  := 64 32
 
 mk_FC_list        = $(call mk_selective,$(FC_list) $(__builtin_FCs))
