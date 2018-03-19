@@ -110,7 +110,7 @@ define mk_collect_so
 	$(eval ___target_dir   := $(or $3,$(mk_OUT_DIR)))
 	$(eval ___find_pattern := $(subst ' -,' -or -,$(foreach l,$2,-wholename '*$l*.so*')))
 	$(if $2,\
-    find $(___lib_dirs) \( $(___find_pattern) \) -and -not -path '*/.*' -printf '\ngrabbing dependency %f from %h' -exec cp -a {} $(___target_dir) \; $(mk_ignoreErrors))
+    find $(___lib_dirs) -maxdepth 1 \( $(___find_pattern) \) -printf '\ngrabbing dependency %f from %h' -exec cp -a {} $(___target_dir) \; $(mk_ignoreErrors))
 endef
 
 # $(mk_find_archives,ARCH_DIRS,ARCH_NAMES)
