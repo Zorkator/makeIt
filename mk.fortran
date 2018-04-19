@@ -261,7 +261,7 @@ __fl_v_script_ifort         := -Wl,--version-script=
 
 #-- derive private flaglists --
 
-__fc_file_types     := f95 f90 for f
+__fc_file_types     := f95 F95 f90 F90 for f F
 
 __fc_pp_defines      = $(mk_FC_PP_DEFINES:%=$(fc_D)%)
 __fc_include_dirs    = $(patsubst %,$(fc_I)%,$(filter-out $(mk_FC_MOD_DIR),$(mk_BUILD_DIR) $(mk_FC_INCLUDE_DIRS)))
@@ -309,13 +309,22 @@ endef
 $(mk_BUILD_DIR)/%.o: %.f95
 	@$(call mk_logged_cmd,$(__fc_cmd_compile))
 
+$(mk_BUILD_DIR)/%.o: %.F95
+	@$(call mk_logged_cmd,$(__fc_cmd_compile))
+    
 $(mk_BUILD_DIR)/%.o: %.f90
+	@$(call mk_logged_cmd,$(__fc_cmd_compile))
+    
+$(mk_BUILD_DIR)/%.o: %.F90
 	@$(call mk_logged_cmd,$(__fc_cmd_compile))
 
 $(mk_BUILD_DIR)/%.o: %.for
 	@$(call mk_logged_cmd,$(__fc_cmd_compile))
 
 $(mk_BUILD_DIR)/%.o: %.f
+	@$(call mk_logged_cmd,$(__fc_cmd_compile))
+    
+$(mk_BUILD_DIR)/%.o: %.F
 	@$(call mk_logged_cmd,$(__fc_cmd_compile))
 
 endif # __mk_fortran_included
