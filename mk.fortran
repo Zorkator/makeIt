@@ -14,8 +14,7 @@ mk_FILE_TYPES    += $(__fc_file_types)
 mk_OUTPUT_DIRS   += $(FC_MOD_DIR)
 mk_CLEARED_FILES += $(mk_BUILD_DIR)/*.o $(mk_BUILD_DIR)/*.mod $(mk_BUILD_DIR)/lib*
 
-__mpifort_FC     := $(shell mpifort -showme:command $(mk_ignoreErrors))# < check if mpifort is available
-__FCs            := gfortran ifort $(if $(__mpifort_FC),mpifort,)
+__FCs            := gfortran ifort
 __builtin_FCs    := $(foreach c,$(__FCs),$(if $(shell which $c $(mk_ignoreErrors)),$c,-$c))
 __builtin_ARCHs  := 64 32
 
@@ -25,6 +24,10 @@ cmd_FC_version    = $(shell $(fc) $(fc_version) 2>&1 | sed -ne 's/\([0-9]\+\.[0-
 cmd_depends      += cmd_FC_depends
 regex_export     ?= ^\s*[cC!]_PROC_EXPORT(\(\w*\)) \L\1
 #                  search regex ---^                ^--- replace pattern: symbol as lowercase!
+
+ifeq ($(strip $(mk_FC_list)),)
+   $(error could not find any compiler on your system. Searched for $(__FCs))
+endif
 
 # $(cmd_LINK,OUT_FILE,OBJECTS)
 define cmd_LINK
@@ -50,10 +53,8 @@ endef
 #-- user parameters --
 
 FC_doc              ?= used fortran compiler: $(call mk_opt_set,FC)
-FC                   = $(firstword $(mk_FC_list))#         < override default on most systems: f77
-FC_mpifort           = $(__mpifort_FC)#                    < ask mpifort for compiler to use
-mk_FC_cmd            = $(call mk_get,FC)
-mk_FC                = $(or $(FC_$(mk_FC_cmd)),$(mk_FC_cmd))
+FC                   = $(firstword $(mk_FC_list))#         < override default on most systems: f77 
+mk_FC                = $(call mk_get,FC)
 
 FC_PP_DEFINES_doc   ?= list of fortran preprocessor defines
 mk_FC_PP_DEFINES     = $(call mk_get,FC_PP_DEFINES)
@@ -91,7 +92,7 @@ mk_FC_LINK_OTHER     = $(call mk_get,FC_LINK_OTHER)
 
 #-- exposed compiler switches --
 
-fc             = $(__fc_$(mk_FC_cmd))#              < compiler call
+fc             = $(__fc_$(mk_FC))#                  < compiler call
 fc_version     = $(__fc_version_$(mk_FC))#          < compiler version string
 fc_c           = $(__fc_c_$(mk_FC))#                < compile only (no linking)
 fc_g           = $(__fc_g_$(mk_FC))#                < compile with debug info
@@ -134,7 +135,7 @@ fc_mod         = $(__fc_mod_$(mk_FC))#              < directory for module outpu
 fc_pic         = $(__fc_pic_$(mk_FC))#              < generate position independent code (pic) for shared libraries
 fc_threads     = $(__fc_threads_$(mk_FC))#          < enable threading support
 #
-fl             = $(__fl_$(mk_FC_cmd))#              < linker call
+fl             = $(__fl_$(mk_FC))#                  < linker call
 fl_soname      = $(__fl_soname_$(mk_FC))#           < set soname
 fl_static      = $(__fl_static_$(mk_FC))#           < force static linking
 fl_rpath       = $(__fl_rpath_$(mk_FC))#            < burn library path
@@ -155,10 +156,6 @@ fpp,%:
 
 
 #-- define compiler specifics --
-
-# MPI compiler driver
-__fc_mpifort                := mpifort
-__fl_mpifort                := mpifort
 
 # GNU Fortran compiler
 __fc_gfortran               := gfortran
