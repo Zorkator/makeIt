@@ -213,18 +213,22 @@ __out_file_name_shared = lib$1.so
 OUT_FILE_doc          ?= path and file name of the final result
 OUT_FILE_default       = $(mk_OUT_DIR)/$(mk_OUT_FILE_NAME)
 mk_OUT_FILE            = $(call mk_get,OUT_FILE)$(__out_file_tag_$(mk_OUT_TYPE))
-__out_file_tag_shared  = $(mk_MAYOR)$(mk_MINOR)
+__out_file_tag_shared  = $(mk_VERSION)
 
 OUT_UMASK_doc         ?= the umask to set for the final output file
 mk_OUT_UMASK           = $(call mk_get,OUT_UMASK)
 
 MAYOR_doc             ?= mayor version number
 MAYOR_default          = 0
-mk_MAYOR               = .$(call mk_val,MAYOR)
+mk_MAYOR               = $(call mk_prefix,.,$(call mk_val,MAYOR))
 
 MINOR_doc             ?= minor version number, e.g. svn revision
 MINOR_default          = $(svn_revision)
-mk_MINOR               = .$(call mk_val,MINOR)
+mk_MINOR               = $(call mk_prefix,.,$(call mk_val,MINOR))
+
+VERSION_doc           ?= version number, default: $(mk_MAYOR)$(mk_MINOR)
+VERSION_default        = $(mk_MAYOR)$(mk_MINOR)
+mk_VERSION             = $(call mk_val,VERSION)
 
 SOURCE_DIRS_default    = $(call scan_source_dirs,.)
 mk_SOURCE_DIRS         = $(call mk_get,SOURCE_DIRS)

@@ -38,6 +38,7 @@ mk_substring      = $(if $(findstring $1,$2),$2,)#<                             
 mk_grep           = $(strip $(foreach x,$2,$(call mk_substring,$1,$x)))#<                          mk_grep( c, abc acd add xyz )      : 'abc acd'
 mk_grep_any       = $(foreach x,$1,$(call mk_grep,$x,$2))#<                                        mk_grep_any( d z, abc acd add xyz ): 'acd add xyz'
 mk_file_grep      = $(shell grep $3 -he '$1' | sed -e 's/$1/$2/')#<                                mk_file_grep( match_regex, match_out, files )
+mk_prefix         = $(if $2,$1$2,)#<                                                               mk_prefix( abc_, var )             : abc_<var> | ''
 mk_lower          = $(shell echo $(1) | tr A-Z a-z)#<                                              mk_lower( sTriNg )                 : string
 mk_upper          = $(shell echo $(1) | tr a-z A-Z)#<                                              mk_upper( sTriNg )                 : STRING
 mk_csv            = $(subst $(mk_SPACE),$(mk_COMMA),$(strip $1))#<                                 mk_csv( v1 v2 ... )                : v1,v2,...
