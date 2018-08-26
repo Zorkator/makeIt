@@ -33,11 +33,10 @@ mk_pwd            = $(abspath .)
 mk_path           = $(join $(dir $1),$(notdir $1))
 mk_norm_dir       = $(patsubst %/,%,$1)
 mk_args           = $1$2$3$4$5$6$7$8$9\n
-mk_error          = $(error $1)
-mk_warning        = $1\n$(warning $1)
 mk_count          = $(words $(filter $1,$2))
-mk_substring      = $(if $(findstring $1,$2),$2,)
-mk_grep           = $(strip $(foreach x,$2,$(call mk_substring,$1,$x)))
+mk_substring      = $(if $(findstring $1,$2),$2,)#<                                                mk_substring( sub, string )        : string | ''
+mk_grep           = $(strip $(foreach x,$2,$(call mk_substring,$1,$x)))#<                          mk_grep( c, abc acd add xyz )      : 'abc acd'
+mk_grep_any       = $(foreach x,$1,$(call mk_grep,$x,$2))#<                                        mk_grep_any( d z, abc acd add xyz ): 'acd add xyz'
 mk_file_grep      = $(shell grep $3 -he '$1' | sed -e 's/$1/$2/')#<                                mk_file_grep( match_regex, match_out, files )
 mk_lower          = $(shell echo $(1) | tr A-Z a-z)#<                                              mk_lower( sTriNg )                 : string
 mk_upper          = $(shell echo $(1) | tr a-z A-Z)#<                                              mk_upper( sTriNg )                 : STRING
@@ -72,6 +71,13 @@ mk_match          = ${shell case $1 in $2) echo '$(value 3)';; *) ;; esac}#<    
 mk_matchRE        = ${shell if expr $1 : $2 > /dev/null; then echo '$(value 3)'; fi}#<             mk_matchRE( text, re_pattern, res ): res | ''
 mk_pattern_opts   = $(foreach p,$($1),$(call mk_match,$2,$p,$($p)))#<                              mk_pattern_opts( PATTERN_list, text )
 mk_patternRE_opts = $(foreach p,$($1),$(call mk_matchRE,$2,$p,$($p)))#<                            mk_patternRE_opts( PATTERN_RE_list, text )
+
+mk_options        = $(call mk_grep_any,- =,$1)#<                                                   mk_options( Bbc A=1 -j )           : A=1 -j
+mk_switches       = $(filter-out $(call mk_options,$1),$1)#<                                       mk_switches( Bbc A=1 -j )          : Bbc
+mk_silent         = $(if $(findstring s,$(call mk_switches,$(MAKEFLAGS))),T,)#<                    mk_silent()                        : T if make was given -s or --quiet
+mk_info           = $(if $(call mk_silent),,$(info $1))#<                                          mk_info( message )                 : show message if make is not --quiet
+mk_error          = $(error $1)
+mk_warning        = $1\n$(warning $1)
 
 # $(call mk_xargs,COMMAND,LIST[,NUM])
 define mk_xargs
