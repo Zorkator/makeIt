@@ -107,6 +107,7 @@ fc_save        = $(__fc_save_$(mk_FC))#             < place local variables in s
 fc_Wsrc_cut    = $(__fc_Wsrc_cut_$(mk_FC))#         < warn if source lines are truncated
 fc_Wimplicit   = $(__fc_Wimplicit_$(mk_FC))#        < warn/raise error on implicit declarations
 fc_Winterfaces = $(__fc_Winterfaces_$(mk_FC))#      < warn/raise error on interfaces mismatch
+fc_consistency = $(__fc_consistency_$(mk_FC))#      < Ensures  math library functions to produce consistent results across different microarchitectural (ifort-only!)
 fc_backtrace   = $(__fc_backtrace_$(mk_FC))#        < generate backtrace on serious runtime errorsA
 fc_fpscomp     = $(call __fc_fpscomp_$(mk_FC),$1)#  < runtime compatibility flags ... (ifort-only!)
 #                                                        valid arguments: none, [no]filesfromcmd, [no]general, [no]ioformat,
@@ -172,6 +173,7 @@ __fc_omp_gfortran           := -fopenmp
 __fc_save_gfortran          := -fno-automatic
 __fc_Wsrc_cut_gfortran      := -Wline-truncation
 __fc_Wimplicit_gfortran     := -fimplicit-none
+__fc_consistency_gfortran   :=
 __fc_Winterfaces_gfortran   :=
 __fc_backtrace_gfortran     := -fbacktrace
 __fc_fpscomp_gfortran       :=
@@ -222,6 +224,7 @@ __fc_save_ifort             := -save
 __fc_Wsrc_cut_ifort         := -warn truncated_source
 __fc_Wimplicit_ifort        := -warn declarations
 __fc_Winterfaces_ifort      := -warn interfaces
+__fc_consistency_ifort      := -fimf-arch-consistency=true
 __fc_backtrace_ifort        := -traceback
 __fc_fpscomp_ifort           = -fpscomp $(call mk_csv,$1)
 __fc_fpmodel_ifort           = -fp-model $1
