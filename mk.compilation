@@ -48,13 +48,41 @@ scan_source_dirs    = $(call mk_norm_dir,$(sort $(dir $(call scan_files_in,$1)))
 filter_source_in    = $(filter $1/%,$(mk_SOURCE_FILES))
 strip_source_in     = $(patsubst $1/%,%,$(call filter_source_in,$1))
 
-svn_repo_root       = $(shell LANG=C svn info | sed -ne 's/^Repository Root: //p')
-svn_repo_url        = $(shell LANG=C svn info | sed -ne 's/^URL: //p')
-svn_revision        = $(shell LANG=C svn info | sed -ne 's/^Revision: //p')
-svn_project_id      = $(notdir $(svn_repo_root))
-svn_branch_id       = $(patsubst $(svn_repo_root)/%,%,$(svn_repo_url))
-svn_modified        = $(shell svn st | grep "^M " | awk '{print $$NF}')
-svn_modified_tab    = $(call mk_join,\\\n,$(svn_modified))
+
+#-- definitions for querying information of version control system
+
+__vcs_info_cmd_git    = LANG=C git describe
+__vcs_stat_cmd_git    = LANG=C git status -s
+__vcs_repo_root_git   = $(shell git config --get remote.origin.url)
+__vcs_revision_nr_git = $(shell git rev-list HEAD --count)
+__vcs_revision_id_git = $(shell git describe --long --tags --dirty --always)
+__vcs_branch_id_git   = $(shell git rev-parse --abbrev-ref HEAD)
+
+__vcs_info_cmd_svn    = LANG=C svn info
+__vcs_stat_cmd_svn    = LANG=C svn status
+__vcs_repo_root_svn   = $(shell $(__vcs_info_cmd_svn) | sed -ne 's/^Repository Root: //p')
+__vcs_repo_url_svn    = $(shell $(__vcs_info_cmd_svn) | sed -ne 's/^URL: //p')
+__vcs_revision_nr_svn = $(shell $(__vcs_info_cmd_svn) | sed -ne 's/^Revision: //p' $())
+__vcs_revision_id_svn = $(__vcs_revision_nr_svn)$(if $(vcs_modified),-dirty,)
+__vcs_branch_id_svn   = $(patsubst $(__vcs_repo_root_svn)/%,%,$(__vcs_repo_url_svn))
+
+__VCS            := git svn
+__builtin_VCS    := $(foreach c,$(__VCS),$(if $(shell $(__vcs_info_cmd_$c) $(mk_ignoreErrors)),$c,-$c))
+mk_VCS_list       = $(call mk_selective,$(VCS_list) $(__builtin_VCS))
+
+VCS_doc          ?= used version contronl system: $(call mk_opt_set,VCS)
+VCS               = $(firstword $(mk_VCS_list))
+mk_VCS            = $(call mk_get,VCS)
+
+vcs_repo_root     = $(__vcs_repo_root_$(mk_VCS))
+vcs_revision_nr   = $(__vcs_revision_nr_$(mk_VCS))
+vcs_revision      = $(vcs_revision_nr)$(if $(vcs_modified),-dirty,)
+vcs_revision_id   = $(__vcs_revision_id_$(mk_VCS))
+vcs_project_id    = $(notdir $(vcs_repo_root))
+vcs_branch_id     = $(__vcs_branch_id_$(mk_VCS))
+vcs_modified      = $(shell $(__vcs_stat_cmd_$(mk_VCS)) | grep "^\s*M " | awk '{print $$NF}')
+vcs_modified_tab  = $(call mk_join,\\\n,$(vcs_modified))
+
 
 mk_frameBinaryTag   = $(if $1,\
                            \n $1                                     \n\
@@ -223,7 +251,7 @@ MAYOR_default          = 0
 mk_MAYOR               = $(call mk_prefix,.,$(call mk_val,MAYOR))
 
 MINOR_doc             ?= minor version number, e.g. svn revision
-MINOR_default          = $(svn_revision)
+MINOR_default          = $(vcs_revision)
 mk_MINOR               = $(call mk_prefix,.,$(call mk_val,MINOR))
 
 VERSION_doc           ?= version number, default: $(mk_MAYOR)$(mk_MINOR)
