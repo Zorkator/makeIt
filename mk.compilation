@@ -375,10 +375,10 @@ rescan:
 
 
 grep,*_doc = grep pattern in source files: make grep,PATTERN[,GREP-OPTS]; default: GREP-OPTS: -iw
-__grep     = grep $(or $(wordlist 2,$(words $1),$1),-iw) $(firstword $1)
+__grep     = grep --color $(or $(wordlist 2,$(words $1),$1),-iw) $(firstword $1)
 grep,%:
 	$(if $(call seq,grep$(mk_COMMA).o,$@),$(error USAGE: $(grep,*_doc)))
-	-@GREP_OPTIONS=--color=auto $(call __grep,$(call mk_ssv,$*)) $(mk_SOURCE_FILES)
+	-@$(call __grep,$(call mk_ssv,$*)) $(mk_SOURCE_FILES) || $(mk_echo) no match
 
 
 VPATH = $(subst $(mk_SPACE),:,$(mk_SOURCE_DIRS))
