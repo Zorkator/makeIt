@@ -2,7 +2,7 @@
 ifndef __mk_compilation_included
 __mk_compilation_included := true
 
-include $(dir $(lastword $(MAKEFILE_LIST)))mk.base
+include $(dir $(lastword $(MAKEFILE_LIST)))mk.log
 
 
 #-- set/modify public definitions --
@@ -175,7 +175,7 @@ endef
 
 # $(call mk_depends,DEPS_FILE,FILELIST
 define mk_depends
-	@$(call mk_log,'$(call mk_frame,building deps $(call mk_DEPS_info,$@))',,renew)
+	@$(call mk_log,'\\n$(call mk_frame,building deps $(call mk_DEPS_info,$@))',,renew)
 	: >$1
 	$(foreach cmd,$(cmd_depends),$(call $(cmd),$1,$2))
 endef
@@ -308,14 +308,13 @@ mk_ACTION_POSTLINK      = $(call mk_get,ACTION_POSTLINK)
 
 #-- targets --
 
-.DEFAULT_GOAL = help
 .SECONDEXPANSION:
 .DELETE_ON_ERROR:
 .PHONY: $(mk_TARGET_list) $(mk_CFG_list) built
 
 
 $(SRC_CACHE_): $(MAKEFILE_LIST)
-	@$(mk_echo) ''$(call mk_frame,recaching source files ...)
+	@$(mk_echo) '\n'$(call mk_frame,recaching source files ...)
 	@mkdir -p $(mk_BUILD_DIR) #<  ensure build dir explicitly - can't do this by prerequisite, as its time stamp changes!
 	@$(call mk_link,$(mk_VARIANT_PAIRS))         #< create links to variant files
 	@$(call mk_write_file,$@,$(mk_SOURCE_FILES)) #< write list of source files to cache file
@@ -356,8 +355,7 @@ $(OUT_): $(SRC_CACHE_) $$(mk_OBJECTS)
 	@if [ -n "$(mk_OUT_UMASK)" ]; then                            \
 		chmod $(mk_OUT_UMASK) $@                                 ;\
 	fi                                                           
-	@$(call mk_log)                                               
-	@$(call mk_log,'$(call mk_frame,built successfully)')         
+	@$(call mk_log,'\\n$(call mk_frame,built successfully)')         
 	@$(mk_ACTION_POSTLINK)
 
 
