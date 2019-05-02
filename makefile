@@ -24,7 +24,7 @@ define mk_makefile
 	$(eval _f_src_dirs   := $(dir $(call scan_files_in,.)))
 	$(eval ___src_dirs   := $(call uniq,$(sort $(_c_src_dirs) $(_f_src_dirs))))
 	$(eval ___lang_types := $(if $(_c_src_dirs),c++,) $(if $(_f_src_dirs),fortran,))
-	$(eval ___include    := $(foreach t,$(___lang_types),include $$$$(_makeIt_)/mk.$t\n))
+	$(eval ___include    := $(foreach t,$(___lang_types),include $$$$(MAKEIT_DIR)/mk.$t\n))
 
 	sed    -e 's#{MAKEIT_DIR}#$(_here)#g' < $(_here)/makefile.template > $1
 	sed -i -e 's#{SOURCE_DIRS}#$(___src_dirs)#g'                         $1

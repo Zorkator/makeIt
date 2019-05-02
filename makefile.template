@@ -20,25 +20,18 @@ IGNORE_DIRS   =
 #OUT_TYPE     = 
 #OUT_NAME     = 
 
-FC_MOD_DIR      :=
-FC_INCLUDE_DIRS :=
-FC_LIBRARY_DIRS :=
-FC_LIBRARIES    :=
+#FC_MOD_DIR      :=
+#FC_INCLUDE_DIRS :=
+#FC_LIBRARY_DIRS :=
+#FC_LIBRARIES    :=
+
+#SUBPACKAGES.%    =
 
 FC_FLAGS.%  = $(fc_threads) $(fc_m)$(mk_ARCH)
 FC_CFLAGS.% = $(fc_fpp) $(call fc_form,free,none) $(fc_backtrace) $(call fc_fpe,0) $(fc_trapuv)
 FC_LFLAGS.% = $(fl_dynamic)
 
 
-ifneq ($(MAKEIT_DIR),)
-	_makeIt_ = $(MAKEIT_DIR)
-else
-	_makeIt_ = {MAKEIT_DIR}
-endif
-
-ifneq ($(_makeIt_),)
+export MAKEIT_DIR ?= {MAKEIT_DIR}
 {INCLUDE_TYPE}
-else
-$(error environment variable MAKEIT_DIR not set! Please set it to home directory of makeIt)
-endif
 
