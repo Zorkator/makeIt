@@ -271,11 +271,11 @@ mk_BINARY_TAG_frame    = $(call mk_get,BINARY_TAG_frame)
 ___framedBinaryTag     = $(or $(mk_BINARY_TAG_frame),$(call mk_frameBinaryTag,$(mk_BINARY_TAG)))
 
 ACTION_PRELINK_doc     = shell command called just before linking
-ACTION_PRELINK_default = $(mk_echo) action pre_link
+ACTION_PRELINK_default =
 mk_ACTION_PRELINK      = $(call mk_get,ACTION_PRELINK)
 
 ACTION_POSTLINK_doc     = shell command called just after linking
-ACTION_POSTLINK_default = $(mk_echo) action post_link
+ACTION_POSTLINK_default = 
 mk_ACTION_POSTLINK      = $(call mk_get,ACTION_POSTLINK)
 
 #-- targets --
@@ -283,7 +283,7 @@ mk_ACTION_POSTLINK      = $(call mk_get,ACTION_POSTLINK)
 .DEFAULT_GOAL = help
 .SECONDEXPANSION:
 .DELETE_ON_ERROR:
-.PHONY: $(mk_TARGET_list) $(mk_CFG_list) built pre_link post_link
+.PHONY: $(mk_TARGET_list) $(mk_CFG_list) built
 
 
 $(SRC_CACHE_): $(MAKEFILE_LIST)
@@ -311,29 +311,27 @@ built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
 	@$(call mk_packages,built)
 	@$(eval __src_list := $(call mk_read_file,$(mk_SRC_CACHE)))
 	@if [ -z "$(call seq,$(__src_list),$(mk_SOURCE_FILES))" ]; then \
-		rm -f $(mk_SRC_CACHE)                                       ;\
+		rm -f $(mk_SRC_CACHE)                                      ;\
 	fi
-	@+$(mk_MAKE) DEPS_=$(mk_DEPS) SRC_CACHE_=$(mk_SRC_CACHE) OUT_='$(mk_OUT_FILE)'     post_link
+	@+$(mk_MAKE) DEPS_=$(mk_DEPS) SRC_CACHE_=$(mk_SRC_CACHE) OUT_='$(mk_OUT_FILE)' '$(mk_OUT_FILE)'
 
-pre_link: $(SRC_CACHE_) $$(mk_OBJECTS)
-	@$(mk_ACTION_PRELINK)
    
-$(OUT_): pre_link
+$(OUT_): $(SRC_CACHE_) $$(mk_OBJECTS)
+	@$(mk_ACTION_PRELINK)
 	@$(call mk_log,'$(call mk_frame,linking target $@)')
 	@$(call cmd_LINK,$@,$(mk_OBJECTS))
 	@$(call mk_log)
-    
-post_link: $(OUT_)
 	@if [ -n "$(___framedBinaryTag)" ]; then                      \
 		$(call mk_log,'$(call mk_frame,tagging binary $(OUT_))') ;\
-		$(call mk_log,$(___framedBinaryTag),-n) | tee -a $^      ;\
+		$(call mk_log,$(___framedBinaryTag),-n) | tee -a $@      ;\
 	fi
 	@if [ -n "$(mk_OUT_UMASK)" ]; then                            \
-		chmod $(mk_OUT_UMASK) $^                                 ;\
+		chmod $(mk_OUT_UMASK) $@                                 ;\
 	fi                                                           
 	@$(call mk_log)                                               
 	@$(call mk_log,'$(call mk_frame,built successfully)')         
 	@$(mk_ACTION_POSTLINK)
+
 
 $(mk_CFG_list):
 	@$(mk_MAKE) CFG=$@ built
