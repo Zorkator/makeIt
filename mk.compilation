@@ -313,6 +313,16 @@ mk_ACTION_POSTLINK      = $(call mk_get,ACTION_POSTLINK)
 .PHONY: $(mk_TARGET_list) $(mk_CFG_list) built
 
 
+built_doc = target for starting build process
+built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
+	@$(call mk_packages,built)
+	@$(eval __src_list := $(call mk_read_file,$(mk_SRC_CACHE)))
+	@if [ -z "$(call seq,$(__src_list),$(mk_SOURCE_FILES))" ]; then \
+		rm -f $(mk_SRC_CACHE)                                      ;\
+	fi
+	@+$(mk_MAKE) SRC_CACHE_=$(mk_SRC_CACHE) DEPS_=$(mk_DEPS) OUT_='$(mk_OUT_FILE)' '$(mk_SRC_CACHE)' '$(mk_DEPS)' '$(mk_OUT_FILE)'
+
+
 $(SRC_CACHE_): $(MAKEFILE_LIST)
 	@$(mk_echo) '\n'$(call mk_frame,recaching source files ...)
 	@mkdir -p $(mk_BUILD_DIR) #<  ensure build dir explicitly - can't do this by prerequisite, as its time stamp changes!
@@ -320,7 +330,7 @@ $(SRC_CACHE_): $(MAKEFILE_LIST)
 	@$(call mk_write_file,$@,$(mk_SOURCE_FILES)) #< write list of source files to cache file
 
 
-$(DEPS_): $(SRC_CACHE_)
+$(DEPS_):
 	@$(eval __src_files := $(mk_SOURCE_FILES))
 	@touch $@                                  #< need to touch DEPS_-file BEFORE mk_submake to prevent endless recursion!!!
 	@$(call mk_submake,--quiet,$(__src_files)) #< call submake on source files to ensure they're up-to-date
@@ -333,17 +343,7 @@ $(DEPS_): $(SRC_CACHE_)
 	fi
 
 
-built_doc = target for starting build process
-built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
-	@$(call mk_packages,built)
-	@$(eval __src_list := $(call mk_read_file,$(mk_SRC_CACHE)))
-	@if [ -z "$(call seq,$(__src_list),$(mk_SOURCE_FILES))" ]; then \
-		rm -f $(mk_SRC_CACHE)                                      ;\
-	fi
-	@+$(mk_MAKE) DEPS_=$(mk_DEPS) SRC_CACHE_=$(mk_SRC_CACHE) OUT_='$(mk_OUT_FILE)' '$(mk_OUT_FILE)'
-
-   
-$(OUT_): $(SRC_CACHE_) $$(mk_OBJECTS)
+$(OUT_): $$(mk_OBJECTS)
 	@$(mk_ACTION_PRELINK)
 	@$(call mk_log,'$(call mk_frame,linking target $@)')
 	@$(call cmd_LINK,$@,$(mk_OBJECTS))
