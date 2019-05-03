@@ -118,7 +118,7 @@ endef
 # NOTE: mk_submake uses calls MAKE (instead of mk_MAKE), since we can NOT force the same makefile for subpackages.
 define mk_packages
 	+$(if $(mk_SUBPACKAGES),\
-		@$(mk_echo) ''$(call mk_frame,make $1 @ subpackages) \
+		@$(mk_echo) '' $(call mk_frame,make $1 @ subpackages) \
 		$(foreach pkg,$(mk_SUBPACKAGES),                     \
 			$(call mk_submake,$1 MAKEFLAGS="$(or $(MAKEFLAGS.$(pkg)),$(mk_PKG_MAKEFLAGS))" -C,$(pkg),1,MAKE,'\n>> SUBPACKAGE:')) \
 		@$(mk_echo))
@@ -175,7 +175,7 @@ endef
 
 # $(call mk_depends,DEPS_FILE,FILELIST
 define mk_depends
-	@$(call mk_log,'\\n$(call mk_frame,building deps $(call mk_DEPS_info,$@))',,renew)
+	@$(call mk_log,'$(call mk_frame,building deps $(call mk_DEPS_info,$@))',,renew)
 	: >$1
 	$(foreach cmd,$(cmd_depends),$(call $(cmd),$1,$2))
 endef
@@ -324,7 +324,7 @@ built: mk_tgt_chk_opts $$(patsubst %,%\/,$$(mk_OUTPUT_DIRS))
 
 
 $(SRC_CACHE_): $(MAKEFILE_LIST)
-	@$(mk_echo) '\n'$(call mk_frame,recaching source files ...)
+	@$(mk_echo) '' $(call mk_frame,recaching source files ...)
 	@mkdir -p $(mk_BUILD_DIR) #<  ensure build dir explicitly - can't do this by prerequisite, as its time stamp changes!
 	@$(call mk_link,$(mk_VARIANT_PAIRS))         #< create links to variant files
 	@$(call mk_write_file,$@,$(mk_SOURCE_FILES)) #< write list of source files to cache file
@@ -355,8 +355,8 @@ $(OUT_): $$(mk_OBJECTS)
 	@if [ -n "$(mk_OUT_UMASK)" ]; then                            \
 		chmod $(mk_OUT_UMASK) $@                                 ;\
 	fi                                                           
-	@$(call mk_log,'\\n$(call mk_frame,built successfully)')         
 	@$(mk_ACTION_POSTLINK)
+	@$(call mk_log,'$(call mk_frame,built successfully)')         
 
 
 $(mk_CFG_list):

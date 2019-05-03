@@ -17,11 +17,11 @@ endef
 #       Its output and return status are kept in variables __out and __stat.
 #       For restoring the exit status we just test the stored status again after writing the log.
 define mk_logged_cmd
-	$(call mk_log,$(strip $1)) ;\
-	 __out=$$($1 2>&1)         ;\
-	 __stat=$$?                ;\
-	 $(mk_echo) -n "$$__out" $(call __log,$3) ;\
-	 test $$__stat -eq 0
+	$(call mk_log,$(strip $1))
+	 __out=$$($1 2>&1)                     ;\
+	 __stat=$$?                            ;\
+	 $(mk_echo) "$$__out" $(call __log,$3) ;\
+	 [ $$__stat -eq 0 ]
 endef 
 
 #-- parameters ...
