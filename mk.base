@@ -4,9 +4,10 @@ __mk_base_included := true
 
 __mk_root := $(dir $(lastword $(MAKEFILE_LIST)))
 
-include  $(__mk_root)mk.log
 sinclude $(__mk_root)gmsl/gmsl
 
+.SUFFIXES:
+.DEFAULT_GOAL   = help
 __cmd_max_args := 512
 
 #-- set/modify public definitions --

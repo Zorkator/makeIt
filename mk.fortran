@@ -146,6 +146,7 @@ fl_arch_off    = $(__fl_arch_off_$(mk_FC))#         < disable including whole ar
 fl_archives    = $(fl_arch_on) $1 $(fl_arch_off)#   < option frame for linking whole archives
 fl_v_script    = $(__fl_v_script_$(mk_FC))#         < version script
 fl_exports     = $(if $(mk_EXPORTS),$(fl_v_script)$(mk_V_SCRIPT),)
+fl_dynamic     = $(__fl_dynamic_$(mk_FC))#          < add all symbols to dynamic symbol table (>> stacktrace)
 
 
 #-- targets --
@@ -207,6 +208,7 @@ __fl_no_undef_gfortran      := -Wl,--no-undefined
 __fl_arch_on_gfortran       := -Wl,--whole-archive
 __fl_arch_off_gfortran      := -Wl,--no-whole-archive
 __fl_v_script_gfortran      := -Wl,--version-script=
+__fl_dynamic_gfortran       := -rdynamic
 
 # Intel Fortran compiler
 __fc_ifort                  := ifort
@@ -258,6 +260,7 @@ __fl_no_undef_ifort         := -Wl,--no-undefined
 __fl_arch_on_ifort          := -Wl,--whole-archive
 __fl_arch_off_ifort         := -Wl,--no-whole-archive
 __fl_v_script_ifort         := -Wl,--version-script=
+__fl_dynamic_ifort          := -rdynamic
 
 #-- derive private flaglists --
 
@@ -281,7 +284,7 @@ __fc_object_archive  = $(mk_BUILD_DIR)/.mk.objects.a
 
 
 define fc_copy_mods
-	cp $(mk_FC_MOD_DIR)/*[!_].mod $(mk_OUT_DIR) $(mk_ignoreErrors)
+	cp -a $(mk_FC_MOD_DIR)/*[!_].mod $(mk_OUT_DIR) $(mk_ignoreErrors)
 endef
 
 define fc_cmd_link.exe
