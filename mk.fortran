@@ -284,7 +284,7 @@ __fc_object_archive  = $(mk_BUILD_DIR)/.mk.objects.a
 
 
 define fc_copy_mods
-	cp $(mk_FC_MOD_DIR)/*[!_].mod $(mk_OUT_DIR) $(mk_ignoreErrors)
+	cp -a $(mk_FC_MOD_DIR)/*[!_].mod $(mk_OUT_DIR) $(mk_ignoreErrors)
 endef
 
 define fc_cmd_link.exe
