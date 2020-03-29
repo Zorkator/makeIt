@@ -89,7 +89,8 @@ cc_I            = $(__cc_I_$(mk_CC))#            < include directory
 cc_L            = $(__cc_L_$(mk_CC))#            < link directory
 cc_l            = $(__cc_l_$(mk_CC))#            < link library
 cc_pic          = $(__cc_pic_$(mk_CC))#          < generate position independent code (pic) for shared libraries
-cc_threads      = $(__cc_threads_$(mk_CC))#			 < enable threading support
+cc_threads      = $(__cc_threads_$(mk_CC))#      < enable threading support
+cc_c++11        = $(__cc_c++11_$(mk_CC))#        < enable C++11 support
 #
 cl          = $(__cl_$(mk_CC))#                  < linker call
 cl_soname   = $(__cl_soname_$(mk_CC))#           < set soname
@@ -134,6 +135,7 @@ __cc_L_gcc        := -L
 __cc_l_gcc        := -l
 __cc_pic_gcc      := -shared -fPIC
 __cc_threads_gcc  := -pthread
+__cc_c++11_gcc    := -std=c++11
 #
 __cl_gcc          := g++
 __cl_soname_gcc   := -Wl,-soname,
